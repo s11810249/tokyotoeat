@@ -3,48 +3,84 @@
     "id": "peter-luger",
     "name": "Peter Luger",
     "subName": "Steak House Tokyo",
-    "heroInfo": "午間套餐 ¥5,500",
+    "heroInfo": "所有金額均為含稅價，需另加收 10% 服務費 。",
     "tabs": [
       {
         "id": "main",
-        "name": "午間菜單",
+        "name": "平日單點午餐",
         "sections": [
           {
-            "name": "沙拉 Salad (選一)",
+            "name": "午餐牛排 (Lunch Steak)",
             "items": [
               {
-                "name": "凱薩沙拉",
-                "subName": "Caesar Salad",
-                "price": 0,
-                "desc": "搭配佩科里諾羅馬羊乳酪"
-              },
-              {
-                "name": "切碎沙拉",
-                "subName": "Chopped Salad",
-                "price": 0,
-                "desc": "含番茄、洋蔥、培根"
+                "name": "熟成肉 USDA Prime 1 英吋牛排 (數量限定)",
+                "subName": "Caes熟成肉USDAプライムビーフ 1インチステーキar Salad",
+                "price": 10500,
+                "desc": ""
               }
             ]
           },
           {
-            "name": "主菜 Main Dish (選一)",
+            "name": "漢堡 (Burger)",
             "items": [
               {
-                "name": "盧格漢堡",
-                "subName": "Luger Burger",
-                "price": 0,
-                "desc": "附薯條",
+                "name": "Luger 漢堡 (USDA Prime 牛肉，超過 1/2 磅)",
+                "subName": "ルーガーバーガー",
+                "price": 3200,
+                "desc": "附炸薯條與洋蔥切片",
                 "options": [
-                  { "name": "培根", "price": "+1700" },
-                  { "name": "起司", "price": "+300" }
+                  {
+                    "name": "培根（ベーコン）",
+                    "price": "+1700"
+                  },
+                  {
+                    "name": "藍紋起司（ブルーチーズ）",
+                    "price": "+500"
+                  }
                 ]
+              }
+            ]
+          },
+          {
+            "name": "三明治 (Sandwich)",
+            "items": [
+              {
+                "name": "熟成肉 USDA Prime 牛排三明治",
+                "subName": "熟成肉 USDAプライムビーフステーキサンドウィッチ",
+                "price": 5400,
+                "desc": "附 Luger 醬汁、炸薯條",
+                "options": []
               },
               {
-                "name": "熟成牛排三明治",
-                "subName": "Steak Sandwich",
-                "price": 2500,
-                "isPlus": true,
-                "desc": "附薯條"
+                "name": "酪梨培根生菜番茄 (B.L.T.) 三明治",
+                "subName": "アボカド シズリングベーコン レタス トマトサンドイッチ",
+                "price": 3199,
+                "desc": "附炸薯條",
+                "options": []
+              }
+            ]
+          },
+          {
+            "name": "燒烤料理 (Grill)",
+            "items": [
+              {
+                "name": "烤大西洋鮭魚",
+                "subName": "グリルドサーモン",
+                "price": 3899,
+                "desc": "附花椰菜",
+                "options": []
+              }
+            ]
+          },
+          {
+            "name": "兒童餐 (Kids)",
+            "items": [
+              {
+                "name": "兒童拼盤 (限小學生以下)",
+                "subName": "キッズプレート (小学生以下のお子様が対象です)",
+                "price": 3000,
+                "desc": "美式起司漢堡、炸薯條、花椰菜、迷你聖代",
+                "options": []
               }
             ]
           }
