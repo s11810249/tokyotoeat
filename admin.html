@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>菜單後台管理</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root { --primary: #2d3436; --accent: #0984e3; --danger: #d63031; --bg: #f1f2f6; }
+        body { font-family: sans-serif; background: var(--bg); margin: 0; padding: 20px; color: var(--primary); }
+        .container { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 300px 1fr; gap: 20px; }
+        
+        /* Config Panel */
+        .config-box { grid-column: 1 / -1; background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .config-grid { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; }
+        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }
+        button { padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; background: #b2bec3; color: white; }
+        button.primary { background: var(--accent); }
+        button.danger { background: var(--danger); }
+        button:hover { opacity: 0.9; }
+
+        /* Sidebar List */
+        .admin-sidebar { background: #fff; padding: 15px; border-radius: 8px; height: calc(100vh - 150px); overflow-y: auto; }
+        .rest-item { padding: 10px; border-bottom: 1px solid #eee; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .rest-item:hover, .rest-item.active { background: #dfe6e9; font-weight: bold; }
+
+        /* Editor Area */
+        .editor { background: #fff; padding: 20px; border-radius: 8px; height: calc(100vh - 150px); overflow-y: auto; }
+        .form-group { margin-bottom: 15px; }
+        .form-label { font-size: 12px; color: #666; display: block; margin-bottom: 5px; }
+        .row { display: flex; gap: 10px; }
+        
+        /* Nested Structures */
+        .box-container { border: 1px solid #ddd; padding: 10px; border-radius: 4px; margin-bottom: 10px; background: #fafafa; }
+        .box-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; font-weight: bold; }
+        
+        .tab-editor { border-left: 3px solid var(--accent); padding-left: 10px; margin-bottom: 20px; }
+        .section-editor { border: 1px solid #e0e0e0; background: white; padding: 10px; margin-top: 10px; border-radius: 4px; }
+        .item-editor { background: #f8f9fa; padding: 10px; margin-top: 5px; border-radius: 4px; border: 1px dashed #ccc; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- 1. 設定區域 (GitHub API Config) -->
+    <div class="config-box">
+        <h3>1. 設定 GitHub 連線</h3>
+        <div class="config-grid">
+            <div>
+                <label class="form-label">GitHub Token (PAT)</label>
+                <input type="password" v-model="config.token" placeholder="ghp_xxxx...">
+            </div>
+            <div>
+                <label class="form-label">使用者名稱 (Owner)</label>
+                <input v-model="config.owner" placeholder="e.g. yourname">
+            </div>
+            <div>
+                <label class="form-label">倉庫名稱 (Repo)</label>
+                <input v-model="config.repo" placeholder="e.g. tokyo-food">
+            </div>
+            <div>
+                <label class="form-label">檔案路徑</label>
+                <input v-model="config.path" placeholder="data.json">
+            </div>
+            <button class="primary" @click="loadFromGithub" :disabled="loading">
+                {{ loading ? '讀取中...' : '從 GitHub 讀取資料' }}
+            </button>
+        </div>
+    </div>
+
+    <div class="container" v-if="loaded">
+        <!-- 2. 左側：餐廳列表 -->
+        <div class="admin-sidebar">
+            <div style="display:flex; justify-content:space-between; margin-bottom:10px;">
+                <h3>餐廳列表</h3>
+                <button class="primary" @click="addRestaurant" style="font-size:12px;">+ 新增</button>
+            </div>
+            <div v-for="(rest, index) in data" :key="index" 
+                 class="rest-item" 
+                 :class="{ active: currentRestIndex === index }"
+                 @click="currentRestIndex = index">
+                <span>{{ rest.name || '未命名餐廳' }}</span>
+                <span style="font-size:12px; color:#999;">{{ rest.id }}</span>
+            </div>
+        </div>
+
+        <!-- 3. 右側：編輯區域 -->
+        <div class="editor" v-if="currentRest">
+            <div class="box-header">
+                <h2>編輯餐廳: {{ currentRest.name }}</h2>
+                <button class="danger" @click="removeRestaurant(currentRestIndex)">刪除此餐廳</button>
+            </div>
+
+            <!-- 餐廳基本資料 -->
+            <div class="box-container">
+                <div class="row">
+                    <div style="flex:1">
+                        <label class="form-label">餐廳ID (英文, 唯一)</label>
+                        <input v-model="currentRest.id">
+                    </div>
+                    <div style="flex:1">
+                        <label class="form-label">中文名稱</label>
+                        <input v-model="currentRest.name">
+                    </div>
+                </div>
+                <div class="row" style="margin-top:10px;">
+                    <div style="flex:1">
+                        <label class="form-label">副標題 (日文/英文)</label>
+                        <input v-model="currentRest.subName">
+                    </div>
+                    <div style="flex:1">
+                        <label class="form-label">標籤資訊 (如: 套餐價格)</label>
+                        <input v-model="currentRest.heroInfo">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 分頁 (Tabs) 管理 -->
+            <h3>菜單分頁管理 (Tabs)</h3>
+            <button @click="addTab" style="margin-bottom:10px; font-size:12px;">+ 新增分頁</button>
+            
+            <div v-for="(tab, tIdx) in currentRest.tabs" :key="tIdx" class="tab-editor">
+                <div class="box-header">
+                    <div class="row" style="align-items:center;">
+                        <input v-model="tab.name" placeholder="分頁名稱 (如: 午間套餐)" style="width:150px;">
+                        <input v-model="tab.id" placeholder="分頁ID" style="width:100px;">
+                    </div>
+                    <button class="danger" @click="removeTab(tIdx)" style="padding:2px 5px; font-size:10px;">移除分頁</button>
+                </div>
+
+                <!-- 分類 (Sections) 管理 -->
+                <div style="margin-left:20px;">
+                    <button @click="addSection(tab)" style="font-size:11px; background:#dfe6e9; color:#333;">+ 新增分類區塊</button>
+                    
+                    <div v-for="(section, sIdx) in tab.sections" :key="sIdx" class="section-editor">
+                        <div class="box-header">
+                            <input v-model="section.name" placeholder="分類名稱 (如: 沙拉)" style="width:100%;">
+                            <button class="danger" @click="removeSection(tab, sIdx)" style="margin-left:10px; padding:2px 5px;">X</button>
+                        </div>
+
+                        <!-- 菜色 (Items) 管理 -->
+                        <div v-for="(item, iIdx) in section.items" :key="iIdx" class="item-editor">
+                            <div class="row">
+                                <input v-model="item.name" placeholder="中文菜名" style="flex:2">
+                                <input v-model="item.subName" placeholder="日文/英文菜名" style="flex:2">
+                                <input v-model.number="item.price" type="number" placeholder="價格" style="flex:1">
+                                <div style="display:flex; align-items:center;">
+                                    <input type="checkbox" v-model="item.isPlus"> <span style="font-size:12px">加價購</span>
+                                </div>
+                                <button class="danger" @click="removeItem(section, iIdx)" style="padding:2px 8px;">X</button>
+                            </div>
+                            <div class="row" style="margin-top:5px;">
+                                <input v-model="item.desc" placeholder="描述 (如: 附薯條)" style="width:100%">
+                            </div>
+                            
+                            <!-- 選項 (Options) -->
+                            <div style="margin-top:5px; padding-top:5px; border-top:1px dotted #ccc;">
+                                <span style="font-size:11px; color:#666;">選項: </span>
+                                <span v-for="(opt, oIdx) in item.options" :key="oIdx" style="background:#eee; padding:2px 5px; border-radius:3px; margin-right:5px; font-size:11px;">
+                                    {{ opt.name }} {{ opt.price }}
+                                    <span @click="item.options.splice(oIdx, 1)" style="cursor:pointer; color:red;">x</span>
+                                </span>
+                                <button @click="addOption(item)" style="font-size:10px; padding:1px 5px;">+ 加選項</button>
+                            </div>
+                        </div>
+                        <button @click="addItem(section)" style="width:100%; margin-top:5px; border:1px dashed #999; background:none; color:#666;">+ 新增菜色</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 儲存按鈕 -->
+            <div style="margin-top:30px; border-top:2px solid #ddd; padding-top:20px; text-align:right;">
+                <button class="primary" style="font-size:16px; padding:10px 30px;" @click="saveToGithub">
+                    {{ saving ? '發布中...' : '儲存並發布到 GitHub' }}
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                config: {
+                    token: localStorage.getItem('gh_token') || '',
+                    owner: localStorage.getItem('gh_owner') || '',
+                    repo: localStorage.getItem('gh_repo') || '',
+                    path: 'data.json'
+                },
+                loading: false,
+                saving: false,
+                loaded: false,
+                data: [], // 這是主要的 JSON 資料
+                sha: '', // GitHub 檔案的 SHA，更新時需要
+                currentRestIndex: 0
+            }
+        },
+        computed: {
+            currentRest() {
+                return this.data[this.currentRestIndex];
+            }
+        },
+        methods: {
+            // --- GitHub API ---
+            async loadFromGithub() {
+                if(!this.config.token || !this.config.owner || !this.config.repo) {
+                    alert('請填寫完整設定');
+                    return;
+                }
+                // 記住設定
+                localStorage.setItem('gh_token', this.config.token);
+                localStorage.setItem('gh_owner', this.config.owner);
+                localStorage.setItem('gh_repo', this.config.repo);
+
+                this.loading = true;
+                try {
+                    const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${this.config.path}`;
+                    const res = await fetch(url, {
+                        headers: { 'Authorization': `token ${this.config.token}` }
+                    });
+                    
+                    if (!res.ok) throw new Error('讀取失敗: ' + res.status);
+                    
+                    const json = await res.json();
+                    this.sha = json.sha; // 儲存 SHA 以便寫入
+                    // GitHub 回傳的是 base64，且可能有換行符號，並需要處理 UTF-8
+                    const content = decodeURIComponent(escape(window.atob(json.content.replace(/\s/g, ''))));
+                    
+                    this.data = JSON.parse(content);
+                    this.loaded = true;
+                } catch (e) {
+                    alert('讀取錯誤: ' + e.message);
+                    console.error(e);
+                    // 沒檔案的話，初始化一個空的
+                    if(confirm("找不到檔案，要初始化一個新的嗎？")) {
+                        this.data = [];
+                        this.loaded = true;
+                    }
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async saveToGithub() {
+                if(!confirm("確定要發布變更到 GitHub 嗎？")) return;
+                this.saving = true;
+                try {
+                    // 轉換回 JSON 字串
+                    const jsonString = JSON.stringify(this.data, null, 2);
+                    // 處理 UTF-8 轉 Base64
+                    const contentBase64 = window.btoa(unescape(encodeURIComponent(jsonString)));
+                    
+                    const url = `https://api.github.com/repos/${this.config.owner}/${this.config.repo}/contents/${this.config.path}`;
+                    
+                    const body = {
+                        message: "Update menu via Admin Panel",
+                        content: contentBase64,
+                        sha: this.sha // 如果是新增檔案，不需要 SHA；更新則必須
+                    };
+
+                    const res = await fetch(url, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `token ${this.config.token}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(body)
+                    });
+
+                    if (!res.ok) {
+                        const err = await res.json();
+                        throw new Error(err.message);
+                    }
+                    
+                    const result = await res.json();
+                    this.sha = result.content.sha; // 更新 SHA
+                    alert("發布成功！手機重新整理網頁即可看到更新。");
+                } catch (e) {
+                    alert('儲存失敗: ' + e.message);
+                } finally {
+                    this.saving = false;
+                }
+            },
+
+            // --- 編輯功能 ---
+            addRestaurant() {
+                this.data.push({
+                    id: 'new-rest-' + Date.now(),
+                    name: '新餐廳',
+                    subName: '',
+                    heroInfo: '',
+                    tabs: [ { id: 'main', name: '主菜單', sections: [] } ]
+                });
+                this.currentRestIndex = this.data.length - 1;
+            },
+            removeRestaurant(idx) {
+                if(confirm('確定刪除此餐廳？')) this.data.splice(idx, 1);
+            },
+            addTab() {
+                this.currentRest.tabs.push({ id: 'tab-'+Date.now(), name: '新分頁', sections: [] });
+            },
+            removeTab(idx) {
+                if(confirm('刪除分頁？')) this.currentRest.tabs.splice(idx, 1);
+            },
+            addSection(tab) {
+                tab.sections.push({ name: '新分類', items: [] });
+            },
+            removeSection(tab, idx) {
+                tab.sections.splice(idx, 1);
+            },
+            addItem(section) {
+                section.items.push({ name: '', subName: '', price: 0, desc: '', options: [] });
+            },
+            removeItem(section, idx) {
+                section.items.splice(idx, 1);
+            },
+            addOption(item) {
+                const name = prompt("選項名稱 (如: 培根)");
+                const price = prompt("價格 (如: +300)");
+                if(name) {
+                    if(!item.options) item.options = [];
+                    item.options.push({ name, price });
+                }
+            }
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
