@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>東京美食口袋名單</title>
+    <!-- Google Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500&family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Vue.js -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+    <style>
+        /* 沿用您喜歡的 CSS 風格 */
+        :root {
+            --primary-text: #2c3e50;
+            --secondary-text: #95a5a6;
+            --accent-color: #c0392b;
+            --header-height: 55px;
+        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif;
+            margin: 0; background-color: #f8f9fa; color: var(--primary-text);
+            padding-top: var(--header-height); line-height: 1.5;
+        }
+        /* Navbar */
+        .navbar {
+            position: fixed; top: 0; left: 0; width: 100%; height: var(--header-height);
+            background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: center;
+            padding: 0 15px; z-index: 1000;
+        }
+        .menu-btn { font-size: 20px; cursor: pointer; border: none; background: none; padding: 8px; }
+        .navbar-title { font-size: 16px; font-weight: 600; flex-grow: 1; text-align: center; margin-right: 40px; }
+
+        /* Sidebar */
+        .sidebar {
+            height: 100%; width: 260px; position: fixed; z-index: 1002; top: 0; left: -270px;
+            background-color: #fff; box-shadow: 2px 0 15px rgba(0,0,0,0.1);
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            padding-top: 20px; display: flex; flex-direction: column;
+        }
+        .sidebar.open { transform: translateX(270px); }
+        .sidebar-header { padding: 0 25px 20px; border-bottom: 1px solid #f0f0f0; font-family: 'Playfair Display', serif; font-size: 22px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-menu { overflow-y: auto; flex: 1; padding: 10px 0; }
+        .sidebar-item { padding: 15px 25px; cursor: pointer; font-size: 15px; color: #555; display: flex; align-items: center; transition: 0.2s; border-left: 3px solid transparent; }
+        .sidebar-item.active { background-color: #f8f9fa; color: #000; border-left-color: #333; font-weight: 500; }
+        .overlay { position: fixed; display: none; width: 100%; height: 100%; top: 0; left: 0; background: rgba(0,0,0,0.4); z-index: 1001; }
+        .overlay.active { display: block; }
+
+        /* Content */
+        .main-content {
+            width: 100%; max-width: 1000px; margin: 0 auto; background: #fff;
+            min-height: calc(100vh - var(--header-height));
+        }
+        @media (min-width: 768px) { .main-content { margin: 20px auto; border-radius: 12px; min-height: auto; } }
+
+        .restaurant-hero { padding: 40px 20px; text-align: center; background: linear-gradient(to bottom, #fff, #fafafa); border-bottom: 1px solid #eee; }
+        .hero-name { font-family: 'Playfair Display', serif; font-size: 28px; margin: 0 0 5px; }
+        .hero-sub { font-size: 13px; color: #888; margin-bottom: 15px; letter-spacing: 1px; }
+        .hero-info { display: inline-block; background: #2c3e50; color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+
+        /* Tabs */
+        .tab-wrapper { padding: 15px 20px 5px; background: #fff; position: sticky; top: var(--header-height); z-index: 90; }
+        .tab-container { display: flex; background: #e0e0e0; padding: 4px; border-radius: 30px; max-width: 400px; margin: 0 auto; }
+        .tab-btn { flex: 1; padding: 8px 15px; border: none; background: transparent; font-size: 14px; color: #666; cursor: pointer; border-radius: 25px; transition: all 0.3s; }
+        .tab-btn.active { background: #fff; color: var(--primary-text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: bold; }
+
+        /* Accordion List */
+        .menu-section { border-bottom: 8px solid #f8f9fa; }
+        .accordion-header { padding: 18px 20px; background: #fff; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+        .accordion-title { font-size: 17px; font-weight: 700; display: flex; align-items: center; }
+        .accordion-title::before { content: ''; display: block; width: 4px; height: 18px; background-color: var(--primary-text); margin-right: 12px; border-radius: 2px; }
+        .accordion-icon { font-size: 14px; color: #aaa; transition: transform 0.3s; }
+        .menu-section.open .accordion-icon { transform: rotate(180deg); }
+        .accordion-content { display: none; padding: 0 20px 20px; }
+        .menu-section.open .accordion-content { display: block; }
+
+        /* Items */
+        .menu-list-item { padding: 15px 0; border-bottom: 1px solid #f0f0f0; display: flex; justify-content: space-between; align-items: flex-start; }
+        .item-main { flex: 1; padding-right: 20px; }
+        .item-name-zh { font-size: 16px; font-weight: 500; margin-bottom: 3px; display: block; }
+        .item-meta { font-size: 13px; color: #95a5a6; line-height: 1.4; }
+        .item-price { font-size: 16px; font-weight: 600; white-space: nowrap; }
+        .price-plus { color: var(--accent-color); }
+        .option-group { margin-top: 10px; padding-left: 10px; border-left: 2px solid #eee; }
+        .option-item { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-top: 5px; }
+        
+        /* Loading State */
+        .loading { text-align: center; padding: 50px; color: #999; }
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Navbar -->
+    <nav class="navbar">
+        <button class="menu-btn" @click="sidebarOpen = true"><i class="fas fa-bars"></i></button>
+        <div class="navbar-title">{{ currentRestaurant ? currentRestaurant.name : 'Loading...' }}</div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="overlay" :class="{ active: sidebarOpen }" @click="sidebarOpen = false"></div>
+    <aside class="sidebar" :class="{ open: sidebarOpen }">
+        <div class="sidebar-header">
+            <span>TOKYO EATS</span>
+            <span style="font-size:14px; color:#999; cursor:pointer;" @click="sidebarOpen = false">✕</span>
+        </div>
+        <div class="sidebar-menu">
+            <div v-for="rest in restaurants" :key="rest.id" 
+                 class="sidebar-item" 
+                 :class="{ active: currentRestaurant && currentRestaurant.id === rest.id }"
+                 @click="selectRestaurant(rest)">
+                 <i class="fas fa-utensils" style="margin-right:10px; color:#888;"></i> {{ rest.name }}
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main v-if="currentRestaurant" class="main-content active">
+        <div class="restaurant-hero">
+            <h1 class="hero-name">{{ currentRestaurant.name }}</h1>
+            <div class="hero-sub">{{ currentRestaurant.subName }}</div>
+            <span v-if="currentRestaurant.heroInfo" class="hero-info">{{ currentRestaurant.heroInfo }}</span>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tab-wrapper" v-if="currentRestaurant.tabs.length > 1">
+            <div class="tab-container">
+                <button v-for="tab in currentRestaurant.tabs" :key="tab.id"
+                        class="tab-btn" :class="{ active: currentTabId === tab.id }"
+                        @click="currentTabId = tab.id">
+                    {{ tab.name }}
+                </button>
+            </div>
+        </div>
+
+        <!-- Sections (Categories) -->
+        <div v-if="currentTab">
+            <div v-for="(section, idx) in currentTab.sections" :key="idx" class="menu-section" :class="{ open: section.isOpen }">
+                <div class="accordion-header" @click="section.isOpen = !section.isOpen">
+                    <div class="accordion-title">{{ section.name }}</div>
+                    <i class="fas fa-chevron-down accordion-icon"></i>
+                </div>
+                <div class="accordion-content">
+                    <div v-for="(item, i) in section.items" :key="i" class="menu-list-item">
+                        <div class="item-main">
+                            <span class="item-name-zh">{{ item.name }}</span>
+                            <div class="item-meta">
+                                {{ item.subName }}
+                                <br v-if="item.desc">{{ item.desc }}
+                            </div>
+                            <!-- Options -->
+                            <div v-if="item.options" class="option-group">
+                                <div v-for="opt in item.options" class="option-item">
+                                    <span>+ {{ opt.name }}</span>
+                                    <span class="price-plus">{{ opt.price }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="item.price > 0" class="item-price" :class="{ 'price-plus': item.isPlus }">
+                            {{ item.isPlus ? '+' : '' }}¥{{ item.price.toLocaleString() }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading" style="text-align:center; padding:30px; font-size:12px; color:#aaa;">
+            ⚠️ 另加收 10% 服務費
+        </div>
+    </main>
+    
+    <div v-else class="loading">
+        Loading Menu Data...
+    </div>
+</div>
+
+<script>
+    const { createApp } = Vue;
+
+    createApp({
+        data() {
+            return {
+                sidebarOpen: false,
+                restaurants: [],
+                currentRestaurant: null,
+                currentTabId: null
+            }
+        },
+        computed: {
+            currentTab() {
+                if (!this.currentRestaurant) return null;
+                return this.currentRestaurant.tabs.find(t => t.id === this.currentTabId) || this.currentRestaurant.tabs[0];
+            }
+        },
+        methods: {
+            async loadData() {
+                try {
+                    // 這裡讀取同目錄下的 json 檔案
+                    const response = await fetch('data.json?t=' + new Date().getTime());
+                    const data = await response.json();
+                    
+                    // 初始化 isOpen 狀態
+                    data.forEach(r => {
+                        r.tabs.forEach(t => {
+                            t.sections.forEach(s => s.isOpen = true); // 預設全部展開
+                        });
+                    });
+
+                    this.restaurants = data;
+                    if (this.restaurants.length > 0) {
+                        this.selectRestaurant(this.restaurants[0]);
+                    }
+                } catch (e) {
+                    console.error("無法讀取資料", e);
+                    alert("讀取資料失敗，請確認 data.json 存在");
+                }
+            },
+            selectRestaurant(rest) {
+                this.currentRestaurant = rest;
+                this.currentTabId = rest.tabs[0].id;
+                this.sidebarOpen = false;
+                window.scrollTo(0, 0);
+            }
+        },
+        mounted() {
+            this.loadData();
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
