@@ -3,305 +3,297 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu Admin 東京美食</title>
-    <!-- Vue.js 3 -->
+    <title>Menu Admin - 東京美食</title>
+    <!-- Vue 3 + Tailwind CSS -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-
+    
     <style>
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
-        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
-        .fade-enter-from, .fade-leave-to { opacity: 0; }
-        /* 自定義捲軸 */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .slide-fade-enter-active { transition: all 0.3s ease-out; }
+        .slide-fade-leave-active { transition: all 0.2s cubic-bezier(1.0, 0.5, 0.8, 1.0); }
+        .slide-fade-enter-from, .slide-fade-leave-to { transform: translateY(20px); opacity: 0; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
     </style>
 </head>
 <body>
 
-<div id="app" class="h-screen flex flex-col overflow-hidden">
+<div id="app" class="h-screen flex flex-col overflow-hidden text-gray-800">
 
-    <!-- 1. 登入/設定視窗 (Overlay) -->
-    <div v-if="!isConfigured" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+    <!-- 1. 登入視窗 -->
+    <div v-if="!isConfigured" class="fixed inset-0 bg-gray-900 bg-opacity-80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
             <div class="bg-indigo-600 p-6 text-center">
-                <i class="fas fa-server text-4xl text-white mb-2"></i>
+                <i class="fas fa-database text-4xl text-white mb-2"></i>
                 <h2 class="text-2xl font-bold text-white">連結 GitHub 資料庫</h2>
-                <p class="text-indigo-200 text-sm mt-1">請輸入您的 Repository 資訊以管理菜單</p>
             </div>
             <div class="p-8 space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">GitHub Personal Access Token</label>
-                    <input type="password" v-model="config.token" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" placeholder="ghp_xxxxxxxxxxxx">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Token</label>
+                    <input type="password" v-model="config.token" class="w-full border p-2 rounded focus:ring-2 ring-indigo-500 outline-none" placeholder="ghp_...">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">使用者名稱 (Owner)</label>
-                        <input v-model="config.owner" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. yourname">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">倉庫名稱 (Repo)</label>
-                        <input v-model="config.repo" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. tokyo-food">
-                    </div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Owner</label><input v-model="config.owner" class="w-full border p-2 rounded"></div>
+                    <div><label class="text-xs font-bold text-gray-500 uppercase">Repo</label><input v-model="config.repo" class="w-full border p-2 rounded"></div>
                 </div>
-                <button @click="loadFromGithub" :disabled="loading" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-3 rounded-lg transition duration-200 flex justify-center items-center">
-                    <i v-if="loading" class="fas fa-circle-notch fa-spin mr-2"></i>
+                <button @click="loadFromGithub" :disabled="loading" class="w-full bg-indigo-600 text-white py-3 rounded font-bold hover:bg-indigo-700 transition">
                     {{ loading ? '連線中...' : '開始管理' }}
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 2. 主介面 (登入後顯示) -->
+    <!-- 2. 主畫面 -->
     <div v-else class="flex h-full">
         
-        <!-- 左側導覽列 (餐廳列表) -->
-        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col shadow-sm z-10">
-            <div class="p-5 border-b border-gray-100 flex items-center justify-between">
-                <span class="font-bold text-gray-800 text-lg tracking-tight"><i class="fas fa-utensils text-indigo-500 mr-2"></i>餐廳列表</span>
-                <button @click="addRestaurant" class="text-indigo-600 hover:bg-indigo-50 p-1 rounded-full transition" title="新增餐廳">
-                    <i class="fas fa-plus-circle text-xl"></i>
+        <!-- 左側：餐廳列表 -->
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-10">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <span class="font-bold text-gray-700">餐廳列表</span>
+                <button @click="addRestaurant" class="bg-indigo-600 text-white w-8 h-8 rounded-full hover:bg-indigo-700 transition shadow-sm" title="新增餐廳">
+                    <i class="fas fa-plus"></i>
                 </button>
             </div>
-            
-            <div class="flex-1 overflow-y-auto p-3 space-y-1">
+            <div class="flex-1 overflow-y-auto p-2 space-y-1">
                 <div v-for="(rest, idx) in data" :key="rest.id" 
                      @click="selectRestaurant(idx)"
-                     class="group flex items-center p-3 rounded-lg cursor-pointer transition duration-200"
-                     :class="currentRestIndex === idx ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600 shadow-sm' : 'hover:bg-gray-50 text-gray-600 border-l-4 border-transparent'">
-                    <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center mr-3 text-gray-500 group-hover:bg-white group-hover:text-indigo-500 transition">
-                        <i class="fas fa-store"></i>
-                    </div>
-                    <div class="overflow-hidden">
-                        <div class="font-medium truncate">{{ rest.name || '未命名餐廳' }}</div>
-                        <div class="text-xs opacity-70 truncate">{{ rest.id }}</div>
-                    </div>
+                     class="p-3 rounded-lg cursor-pointer transition flex items-center"
+                     :class="currentRestIndex === idx ? 'bg-indigo-50 text-indigo-700 border-l-4 border-indigo-600' : 'hover:bg-gray-100 text-gray-600 border-l-4 border-transparent'">
+                    <i class="fas fa-store mr-3 opacity-50"></i>
+                    <div class="truncate font-medium">{{ rest.name || '未命名餐廳' }}</div>
                 </div>
             </div>
-
-            <div class="p-4 border-t border-gray-200 bg-gray-50">
-                <button @click="logout" class="text-sm text-gray-500 hover:text-red-600 flex items-center">
-                    <i class="fas fa-sign-out-alt mr-2"></i> 登出
-                </button>
+            <div class="p-4 border-t border-gray-100">
+                <button @click="logout" class="text-xs text-gray-400 hover:text-red-500 flex items-center"><i class="fas fa-sign-out-alt mr-2"></i> 登出設定</button>
             </div>
         </aside>
 
-        <!-- 右側編輯區 -->
-        <main class="flex-1 flex flex-col min-w-0 bg-gray-50">
+        <!-- 右側：編輯區 -->
+        <main class="flex-1 flex flex-col bg-gray-50 min-w-0">
             
-            <!-- 頂部工具列 -->
-            <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 shadow-sm z-10">
-                <h1 v-if="currentRest" class="text-xl font-bold text-gray-800 truncate">
-                    正在編輯: <span class="text-indigo-600">{{ currentRest.name }}</span>
-                </h1>
-                <h1 v-else class="text-xl text-gray-400">請選擇一間餐廳</h1>
-
-                <div class="flex items-center space-x-3">
-                    <span v-if="hasUnsavedChanges" class="text-amber-500 text-sm font-medium flex items-center animate-pulse">
-                        <i class="fas fa-pen mr-1"></i> 未儲存變更
+            <!-- 頂部 Header -->
+            <header class="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-20">
+                <div class="flex items-center">
+                    <h1 class="text-xl font-bold text-gray-800">{{ currentRest ? currentRest.name : '請選擇餐廳' }}</h1>
+                    <span v-if="hasUnsavedChanges" class="ml-4 px-2 py-1 bg-amber-100 text-amber-700 text-xs rounded-md font-bold animate-pulse">
+                        <i class="fas fa-pen mr-1"></i> 未儲存
                     </span>
-                    <a :href="`https://${config.owner}.github.io/${config.repo}/`" target="_blank" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg text-sm font-medium transition">
-                        <i class="fas fa-external-link-alt mr-1"></i> 預覽前台
+                </div>
+                <div class="flex space-x-3">
+                    <a :href="`https://${config.owner}.github.io/${config.repo}/`" target="_blank" class="px-4 py-2 text-gray-500 hover:bg-gray-100 rounded text-sm font-bold">
+                        <i class="fas fa-eye mr-1"></i> 預覽
                     </a>
-                    <button @click="saveToGithub" :disabled="saving" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-md transition flex items-center">
+                    <button @click="saveToGithub" :disabled="saving" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded shadow-md font-bold flex items-center transition">
                         <i v-if="saving" class="fas fa-circle-notch fa-spin mr-2"></i>
-                        <i v-else class="fas fa-cloud-upload-alt mr-2"></i>
                         {{ saving ? '發布中...' : '發布更新' }}
                     </button>
                 </div>
             </header>
 
-            <!-- 內容編輯區 -->
+            <!-- 內容區 -->
             <div v-if="currentRest" class="flex-1 overflow-y-auto p-6">
                 
-                <!-- 頁籤切換 -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 mb-6 overflow-hidden">
-                    <div class="flex border-b border-gray-200">
-                        <button @click="activeTab = 'basic'" 
-                                class="px-6 py-4 font-medium text-sm flex items-center transition relative"
-                                :class="activeTab === 'basic' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'">
-                            <i class="fas fa-info-circle mr-2"></i> 餐廳基本設定
-                            <div v-if="activeTab === 'basic'" class="absolute bottom-0 left-0 w-full h-1 bg-indigo-600"></div>
-                        </button>
-                        <button @click="activeTab = 'menu'" 
-                                class="px-6 py-4 font-medium text-sm flex items-center transition relative"
-                                :class="activeTab === 'menu' ? 'text-indigo-600 bg-indigo-50' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'">
-                            <i class="fas fa-book-open mr-2"></i> 菜單內容編輯
-                            <div v-if="activeTab === 'menu'" class="absolute bottom-0 left-0 w-full h-1 bg-indigo-600"></div>
-                        </button>
-                        <div class="flex-1"></div>
-                        <button @click="deleteRestaurant" class="px-6 py-4 text-red-500 hover:text-red-700 text-sm font-medium hover:bg-red-50 transition">
-                            <i class="fas fa-trash-alt mr-1"></i> 刪除餐廳
-                        </button>
-                    </div>
+                <!-- Tab 切換 (基本資料 vs 菜單內容) -->
+                <div class="bg-white rounded-t-xl border-b border-gray-200 flex">
+                    <button @click="activeTab = 'basic'" class="px-6 py-3 text-sm font-bold border-b-2 transition" :class="activeTab==='basic' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'">基本資料</button>
+                    <button @click="activeTab = 'menu'" class="px-6 py-3 text-sm font-bold border-b-2 transition" :class="activeTab==='menu' ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'">菜單內容</button>
+                    <div class="flex-1"></div>
+                    <button @click="deleteRestaurant" class="px-4 text-red-400 hover:text-red-600"><i class="fas fa-trash-alt"></i></button>
+                </div>
 
-                    <!-- TAB 1: 基本資訊 -->
-                    <div v-if="activeTab === 'basic'" class="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="col-span-2 md:col-span-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">餐廳 ID (系統用，英文)</label>
-                            <input v-model="currentRest.id" class="form-input">
-                        </div>
-                        <div class="col-span-2 md:col-span-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">顯示名稱 (中文)</label>
-                            <input v-model="currentRest.name" class="form-input text-lg font-bold">
-                        </div>
-                        <div class="col-span-2 md:col-span-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">副標題 (日文/英文)</label>
-                            <input v-model="currentRest.subName" class="form-input">
-                        </div>
-                        <div class="col-span-2 md:col-span-1">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">標籤資訊 (如：午間套餐價格)</label>
-                            <div class="flex items-center">
-                                <input v-model="currentRest.heroInfo" class="form-input rounded-r-none">
-                                <span class="bg-gray-100 border border-l-0 border-gray-300 px-3 py-2 rounded-r-lg text-gray-500 text-sm">預覽</span>
-                            </div>
+                <div class="bg-white rounded-b-xl shadow-sm border border-t-0 border-gray-200 p-6 min-h-[500px]">
+                    
+                    <!-- 1. 基本資料 -->
+                    <div v-if="activeTab === 'basic'" class="grid grid-cols-2 gap-6 max-w-2xl">
+                        <div class="col-span-2"><label class="text-xs font-bold text-gray-400">中文名稱</label><input v-model="currentRest.name" class="w-full border-b-2 border-gray-200 focus:border-indigo-600 outline-none py-2 text-lg font-bold bg-transparent"></div>
+                        <div><label class="text-xs font-bold text-gray-400">原文名稱</label><input v-model="currentRest.subName" class="w-full border-b border-gray-200 focus:border-indigo-600 outline-none py-2 bg-transparent"></div>
+                        <div><label class="text-xs font-bold text-gray-400">ID</label><input v-model="currentRest.id" class="w-full border-b border-gray-200 focus:border-indigo-600 outline-none py-2 bg-transparent"></div>
+                        <div class="col-span-2">
+                            <label class="text-xs font-bold text-gray-400">套餐價格標籤 / 備註</label>
+                            <input v-model="currentRest.heroInfo" class="w-full border-b border-gray-200 focus:border-indigo-600 outline-none py-2 bg-transparent" placeholder="例如：午間套餐 ¥5,500">
                         </div>
                     </div>
 
-                    <!-- TAB 2: 菜單編輯 -->
-                    <div v-if="activeTab === 'menu'" class="p-6 bg-gray-50 min-h-[500px]">
+                    <!-- 2. 菜單內容 -->
+                    <div v-if="activeTab === 'menu'">
                         
-                        <!-- 1. 菜單分頁 (Tabs) -->
-                        <div class="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
-                            <span class="text-sm font-bold text-gray-500 uppercase mr-2 flex-shrink-0">菜單分頁:</span>
+                        <!-- 分頁 Tabs 導覽列 -->
+                        <div class="flex items-center space-x-2 mb-6 overflow-x-auto pb-2 border-b border-gray-100 scrollbar-hide">
+                            <span class="text-xs font-bold text-gray-400 uppercase mr-2 flex-shrink-0">菜單分頁</span>
+                            
+                            <!-- 既有分頁 -->
                             <div v-for="(tab, tIdx) in currentRest.tabs" :key="tIdx" 
                                  @click="currentMenuTabIdx = tIdx"
-                                 class="cursor-pointer px-4 py-2 rounded-full text-sm font-medium transition flex items-center flex-shrink-0"
-                                 :class="currentMenuTabIdx === tIdx ? 'bg-white text-indigo-700 shadow ring-1 ring-indigo-200' : 'bg-gray-200 text-gray-600 hover:bg-gray-300'">
+                                 class="cursor-pointer px-4 py-1 rounded-full text-sm font-medium transition flex items-center flex-shrink-0 border group"
+                                 :class="currentMenuTabIdx === tIdx ? 'bg-indigo-50 border-indigo-200 text-indigo-700 ring-1 ring-indigo-100' : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'">
                                 <span v-if="currentMenuTabIdx !== tIdx">{{ tab.name }}</span>
-                                <input v-else v-model="tab.name" class="bg-transparent outline-none w-20 text-center border-b border-indigo-300" @click.stop>
-                                <button v-if="currentRest.tabs.length > 1" @click.stop="removeTab(tIdx)" class="ml-2 text-gray-400 hover:text-red-500">
-                                    <i class="fas fa-times"></i>
-                                </button>
+                                <input v-else v-model="tab.name" class="bg-transparent outline-none w-24 text-center border-b border-indigo-200" @click.stop placeholder="分頁名稱">
+                                <i v-if="currentRest.tabs.length > 1" @click.stop="removeTab(tIdx)" class="fas fa-times ml-2 text-xs text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition"></i>
                             </div>
-                            <button @click="addTab" class="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 hover:bg-indigo-200 flex items-center justify-center transition">
-                                <i class="fas fa-plus"></i>
+
+                            <!-- 新增分頁按鈕 (觸發 Modal) -->
+                            <button @click="showTabTemplateModal = true" class="w-8 h-8 rounded-full bg-gray-100 hover:bg-indigo-600 hover:text-white text-gray-500 flex items-center justify-center transition shadow-sm flex-shrink-0" title="新增分頁">
+                                <i class="fas fa-plus text-xs"></i>
                             </button>
                         </div>
 
-                        <!-- 2. 分類與菜色 -->
+                        <!-- 菜單區塊編輯 -->
                         <div v-if="currentMenuTab" class="space-y-6">
                             
-                            <!-- 分類 Loop -->
+                            <!-- 如果分頁內容是空的，顯示提示 -->
+                            <div v-if="currentMenuTab.sections.length === 0" class="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
+                                <p class="text-gray-400 mb-4">此分頁目前沒有內容</p>
+                                <button @click="addSection" class="px-4 py-2 bg-white border border-gray-300 rounded shadow-sm hover:text-indigo-600">新增第一個分類</button>
+                            </div>
+
+                            <!-- 分類區塊 Loop -->
                             <div v-for="(section, sIdx) in currentMenuTab.sections" :key="sIdx" 
-                                 class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden transition hover:shadow-md">
+                                 class="border border-gray-200 rounded-lg overflow-hidden bg-white shadow-sm hover:shadow-md transition duration-200">
                                 
-                                <!-- 分類標題 -->
-                                <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                                <!-- 區塊標題 -->
+                                <div class="bg-gray-50 p-3 flex items-center justify-between border-b border-gray-200 group">
                                     <div class="flex items-center flex-1">
-                                        <div class="flex flex-col space-y-1">
-                                            <button @click="moveSection(sIdx, -1)" :disabled="sIdx===0" class="text-gray-400 hover:text-indigo-600 disabled:opacity-30"><i class="fas fa-chevron-up"></i></button>
-                                            <button @click="moveSection(sIdx, 1)" :disabled="sIdx===currentMenuTab.sections.length-1" class="text-gray-400 hover:text-indigo-600 disabled:opacity-30"><i class="fas fa-chevron-down"></i></button>
+                                        <div class="mr-3 flex flex-col text-gray-300 space-y-0.5">
+                                            <i @click="moveSection(sIdx, -1)" class="fas fa-chevron-up hover:text-indigo-500 cursor-pointer text-xs"></i>
+                                            <i @click="moveSection(sIdx, 1)" class="fas fa-chevron-down hover:text-indigo-500 cursor-pointer text-xs"></i>
                                         </div>
-                                        <div class="ml-3 flex-1">
-                                            <input v-model="section.name" class="w-full bg-transparent font-bold text-gray-700 text-lg outline-none placeholder-gray-400" placeholder="分類名稱 (如：開胃菜)">
+                                        <div class="flex-1">
+                                            <input v-model="section.name" class="bg-transparent font-bold text-gray-700 outline-none w-full placeholder-gray-400" placeholder="分類名稱 (如：開胃菜)">
                                         </div>
                                     </div>
-                                    <button @click="removeSection(sIdx)" class="text-gray-400 hover:text-red-500 ml-4 p-2 transition">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
+                                    <button @click="removeSection(sIdx)" class="text-gray-300 hover:text-red-500 p-1"><i class="fas fa-trash-alt"></i></button>
                                 </div>
 
                                 <!-- 菜色列表 -->
-                                <div class="p-4 space-y-3">
-                                    <div v-for="(item, iIdx) in section.items" :key="iIdx" class="flex items-start bg-white p-3 rounded border border-gray-100 hover:border-indigo-100 hover:bg-indigo-50/30 transition group">
-                                        <!-- 排序 -->
-                                        <div class="flex flex-col mr-3 pt-1 text-gray-300">
-                                            <button @click="moveItem(section, iIdx, -1)" class="hover:text-indigo-500"><i class="fas fa-caret-up"></i></button>
-                                            <button @click="moveItem(section, iIdx, 1)" class="hover:text-indigo-500"><i class="fas fa-caret-down"></i></button>
+                                <div class="p-3 space-y-3">
+                                    <div v-for="(item, iIdx) in section.items" :key="iIdx" class="relative group/item bg-white p-3 rounded border border-gray-100 hover:border-indigo-300 hover:bg-indigo-50/20 transition">
+                                        
+                                        <!-- 第一行：基本資訊 -->
+                                        <div class="flex items-start">
+                                            <div class="flex flex-col mr-2 pt-1.5 text-gray-300 w-4 space-y-0.5">
+                                                <i @click="moveItem(section, iIdx, -1)" class="fas fa-caret-up hover:text-indigo-500 cursor-pointer"></i>
+                                                <i @click="moveItem(section, iIdx, 1)" class="fas fa-caret-down hover:text-indigo-500 cursor-pointer"></i>
+                                            </div>
+                                            <div class="flex-1 grid grid-cols-12 gap-3">
+                                                <div class="col-span-4">
+                                                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-0.5 block">菜名</label>
+                                                    <input v-model="item.name" class="w-full border-b border-gray-200 focus:border-indigo-500 outline-none bg-transparent text-sm font-bold pb-1" placeholder="中文菜名">
+                                                </div>
+                                                <div class="col-span-4">
+                                                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-0.5 block">原文</label>
+                                                    <input v-model="item.subName" class="w-full border-b border-gray-200 focus:border-indigo-500 outline-none bg-transparent text-sm text-gray-500 pb-1" placeholder="日文/英文">
+                                                </div>
+                                                <div class="col-span-2 relative">
+                                                    <label class="text-[10px] text-gray-400 font-bold uppercase mb-0.5 block">價格</label>
+                                                    <span class="absolute left-0 top-5 text-gray-400 text-xs">¥</span>
+                                                    <input v-model.number="item.price" type="number" class="w-full pl-3 border-b border-gray-200 focus:border-indigo-500 outline-none bg-transparent text-sm font-bold pb-1" placeholder="0">
+                                                </div>
+                                                <div class="col-span-2 flex justify-end items-end pb-1">
+                                                    <label class="text-xs text-gray-500 flex items-center cursor-pointer mr-3 hover:text-indigo-600">
+                                                        <input type="checkbox" v-model="item.isPlus" class="mr-1 accent-indigo-600">加價
+                                                    </label>
+                                                    <button @click="removeItem(section, iIdx)" class="text-gray-300 hover:text-red-500"><i class="fas fa-times"></i></button>
+                                                </div>
+                                            </div>
                                         </div>
 
-                                        <!-- 內容 -->
-                                        <div class="flex-1 grid grid-cols-12 gap-3">
-                                            <div class="col-span-4">
-                                                <label class="text-xs text-gray-400 block mb-1">中文名稱</label>
-                                                <input v-model="item.name" class="w-full text-sm font-medium border-b border-gray-200 bg-transparent focus:border-indigo-500 outline-none pb-1" placeholder="菜名">
-                                            </div>
-                                            <div class="col-span-4">
-                                                <label class="text-xs text-gray-400 block mb-1">原文/英文</label>
-                                                <input v-model="item.subName" class="w-full text-sm text-gray-500 border-b border-gray-200 bg-transparent focus:border-indigo-500 outline-none pb-1" placeholder="原文">
-                                            </div>
-                                            <div class="col-span-2">
-                                                <label class="text-xs text-gray-400 block mb-1">價格</label>
-                                                <input v-model.number="item.price" type="number" class="w-full text-sm font-bold text-gray-700 border-b border-gray-200 bg-transparent focus:border-indigo-500 outline-none pb-1">
-                                            </div>
-                                            <div class="col-span-2 flex items-center justify-end space-x-2 pt-4">
-                                                <label class="cursor-pointer flex items-center text-xs text-gray-500 hover:text-indigo-600">
-                                                    <input type="checkbox" v-model="item.isPlus" class="mr-1 accent-indigo-600">
-                                                    加價購
-                                                </label>
-                                                <button @click="removeItem(section, iIdx)" class="text-gray-300 hover:text-red-500 transition px-2">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            </div>
+                                        <!-- 第二行：描述與選項 -->
+                                        <div class="pl-6 mt-2">
+                                            <input v-model="item.desc" class="w-full text-xs border-b border-transparent hover:border-gray-200 focus:border-indigo-300 outline-none bg-transparent text-gray-500 placeholder-gray-300 pb-1" placeholder="描述 (如: 附薯條)">
                                             
-                                            <!-- 第二行：描述 -->
-                                            <div class="col-span-12 mt-1">
-                                                <input v-model="item.desc" class="w-full text-xs text-gray-500 bg-transparent border-b border-transparent hover:border-gray-200 focus:border-indigo-300 outline-none placeholder-gray-300 pb-1" placeholder="餐點描述 (例如：附薯條、含花生)">
-                                            </div>
-
-                                            <!-- 第三行：加購選項 (Options) -->
-                                            <div class="col-span-12 mt-2 bg-gray-50/80 p-3 rounded-lg border border-dashed border-gray-200">
-                                                <div class="text-xs font-bold text-gray-400 mb-2 flex items-center">
-                                                    <i class="fas fa-list-ul mr-1"></i> 客製化/加購選項 (Options)
-                                                </div>
-                                                <div class="space-y-2">
-                                                    <!-- 選項列表 -->
-                                                    <div v-for="(opt, oIdx) in item.options" :key="oIdx" class="flex items-center space-x-2">
-                                                        <div class="flex-1 relative">
-                                                            <i class="fas fa-tag absolute left-2 top-2 text-gray-300 text-xs"></i>
-                                                            <input v-model="opt.name" placeholder="選項名稱 (如: 培根)" class="w-full pl-6 pr-2 py-1 text-sm border border-gray-200 rounded focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none">
-                                                        </div>
-                                                        <div class="w-24 relative">
-                                                            <span class="absolute left-2 top-1.5 text-gray-400 text-xs">+</span>
-                                                            <input v-model="opt.price" placeholder="300" class="w-full pl-5 pr-2 py-1 text-sm border border-gray-200 rounded focus:border-indigo-500 focus:ring-1 focus:ring-indigo-200 outline-none">
-                                                        </div>
-                                                        <button @click="item.options.splice(oIdx, 1)" class="text-gray-300 hover:text-red-500 p-1">
-                                                            <i class="fas fa-trash-alt"></i>
-                                                        </button>
+                                            <!-- 選項區塊 -->
+                                            <div class="mt-2 flex flex-wrap gap-2 items-center min-h-[28px]">
+                                                <div v-if="item.options && item.options.length > 0" class="flex flex-wrap gap-2">
+                                                    <div v-for="(opt, oIdx) in item.options" :key="oIdx" class="bg-white border border-gray-200 rounded px-2 py-1 text-xs flex items-center shadow-sm">
+                                                        <input v-model="opt.name" class="w-16 outline-none bg-transparent border-b border-transparent focus:border-indigo-300 px-1" placeholder="選項">
+                                                        <span class="text-gray-300 mx-1">|</span>
+                                                        <span class="text-gray-400 mr-0.5">+</span>
+                                                        <input v-model="opt.price" class="w-10 outline-none bg-transparent text-indigo-600 font-bold border-b border-transparent focus:border-indigo-300 px-1" placeholder="0">
+                                                        <i @click="item.options.splice(oIdx, 1)" class="fas fa-times ml-1.5 text-gray-300 hover:text-red-500 cursor-pointer"></i>
                                                     </div>
-                                                    
-                                                    <!-- 新增按鈕 -->
-                                                    <button @click="addOption(item)" class="text-xs text-indigo-600 font-medium hover:text-indigo-800 flex items-center py-1 px-1 rounded hover:bg-indigo-50 transition w-fit">
-                                                        <i class="fas fa-plus-circle mr-1"></i> 新增選項
+                                                </div>
+                                                
+                                                <!-- 工具列 -->
+                                                <div class="flex items-center space-x-1 opacity-50 group-hover/item:opacity-100 transition">
+                                                    <button @click="addOption(item)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded transition" title="新增一個空白選項">
+                                                        <i class="fas fa-plus mr-1"></i>選
+                                                    </button>
+                                                    <button @click="openOptionTemplateModal(item)" class="text-xs bg-indigo-50 hover:bg-indigo-100 text-indigo-600 px-2 py-1 rounded transition" title="魔術棒：套用常用選項">
+                                                        <i class="fas fa-magic"></i>
                                                     </button>
                                                 </div>
                                             </div>
                                         </div>
+
                                     </div>
-                                    
-                                    <button @click="addItem(section)" class="w-full py-2 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 hover:border-indigo-300 hover:text-indigo-500 hover:bg-indigo-50 transition text-sm font-medium">
+                                    <button @click="addItem(section)" class="w-full py-2 border border-dashed border-gray-300 rounded text-gray-400 hover:bg-gray-50 hover:text-gray-600 text-sm transition font-medium">
                                         <i class="fas fa-plus mr-1"></i> 新增一道菜
                                     </button>
                                 </div>
                             </div>
 
-                            <button @click="addSection" class="w-full py-4 bg-white border border-gray-200 shadow-sm rounded-xl text-gray-500 hover:text-indigo-600 hover:shadow-md transition font-medium">
-                                <i class="fas fa-folder-plus mr-2"></i> 新增一個分類區塊 (如: 甜點區)
+                            <button @click="addSection" class="w-full py-3 bg-white border border-gray-200 hover:border-indigo-300 hover:text-indigo-600 text-gray-500 rounded-lg font-bold transition shadow-sm">
+                                <i class="fas fa-folder-plus mr-2"></i> 新增分類區塊
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-            
-            <div v-else class="flex-1 flex flex-col items-center justify-center text-gray-400">
-                <i class="fas fa-utensils text-6xl mb-4 text-gray-200"></i>
-                <p>請從左側選擇餐廳開始編輯，或新增一間餐廳。</p>
-            </div>
         </main>
     </div>
 
-    <!-- Toast 通知 -->
-    <transition name="fade">
-        <div v-if="toast.show" class="fixed top-5 right-5 z-50 px-6 py-4 rounded-lg shadow-lg text-white font-medium flex items-center" :class="toast.type === 'error' ? 'bg-red-500' : 'bg-green-500'">
-            <i class="fas mr-3" :class="toast.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'"></i>
+    <!-- Modal: 新增分頁模板選擇 -->
+    <div v-if="showTabTemplateModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
+            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800">新增菜單分頁</h3>
+                <button @click="showTabTemplateModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-6">
+                <p class="text-sm text-gray-500 mb-4">請選擇一個模板來初始化這個新分頁：</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div v-for="temp in tabTemplates" :key="temp.id" 
+                         @click="applyTabTemplate(temp)"
+                         class="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-indigo-500 hover:bg-indigo-50 transition group flex items-start">
+                        <div class="w-10 h-10 rounded-full bg-indigo-100 text-indigo-600 flex-shrink-0 flex items-center justify-center mr-3 group-hover:bg-indigo-600 group-hover:text-white transition">
+                            <i :class="temp.icon"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-sm">{{ temp.title }}</h4>
+                            <p class="text-xs text-gray-500 mt-1">{{ temp.desc }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: 選項魔術棒 -->
+    <div v-if="showOptionModal" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+                <h3 class="font-bold text-gray-800"><i class="fas fa-magic text-indigo-500 mr-2"></i>快速套用選項</h3>
+                <button @click="showOptionModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 space-y-2 max-h-[60vh] overflow-y-auto">
+                <div v-for="(optTemp, idx) in optionTemplates" :key="idx" 
+                     @click="applyOptionTemplate(optTemp)"
+                     class="p-3 border border-gray-200 rounded hover:bg-indigo-50 hover:border-indigo-300 cursor-pointer transition">
+                    <div class="font-bold text-gray-700 text-sm mb-1">{{ optTemp.title }}</div>
+                    <div class="flex flex-wrap gap-1">
+                        <span v-for="o in optTemp.options" class="text-xs bg-gray-100 text-gray-500 px-1 rounded">{{ o.name }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <transition name="slide-fade">
+        <div v-if="toast.show" class="fixed top-5 right-5 z-50 px-6 py-3 rounded shadow-lg text-white font-medium flex items-center" :class="toast.type === 'error' ? 'bg-red-500' : 'bg-green-600'">
+            <i class="fas mr-2" :class="toast.type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'"></i>
             {{ toast.message }}
         </div>
     </transition>
@@ -313,7 +305,7 @@
 
     createApp({
         setup() {
-            // 狀態變數
+            // --- 設定 ---
             const config = reactive({
                 token: localStorage.getItem('gh_token') || '',
                 owner: localStorage.getItem('gh_owner') || '',
@@ -321,225 +313,230 @@
                 path: 'data.json'
             });
 
-            const isConfigured = computed(() => !!(localStorage.getItem('gh_token')));
+            const isConfigured = computed(() => !!localStorage.getItem('gh_token'));
             const data = ref([]);
             const currentRestIndex = ref(0);
             const currentMenuTabIdx = ref(0);
             const activeTab = ref('basic');
             const sha = ref('');
-            
             const loading = ref(false);
             const saving = ref(false);
             const hasUnsavedChanges = ref(false);
-            
             const toast = reactive({ show: false, message: '', type: 'success' });
+            
+            // --- Modals ---
+            const showTabTemplateModal = ref(false); // 控制分頁模板視窗
+            const showOptionModal = ref(false);
+            const currentEditingItem = ref(null);
+
+            // --- 模板定義: 分頁模板 (Tab Templates) ---
+            const tabTemplates = [
+                {
+                    id: 'course',
+                    title: '套餐模板 (Set Course)',
+                    desc: '包含前菜、主餐、甜點分類。適合午/晚間套餐。',
+                    icon: 'fas fa-utensils',
+                    sections: [
+                        { name: '前菜/沙拉 (選一)', items: [{name:'凱薩沙拉', subName:'Caesar Salad', price:0, desc:'', options:[]}] },
+                        { name: '主菜 (選一)', items: [{name:'漢堡', subName:'Burger', price:0, desc:'附薯條', options:[]}, {name:'牛排', subName:'Steak', price:3000, isPlus:true, desc:'', options:[]}] },
+                        { name: '甜點', items: [{name:'冰淇淋', subName:'Ice Cream', price:500, isPlus:true, desc:'', options:[]}] }
+                    ]
+                },
+                {
+                    id: 'alacarte',
+                    title: '單點模板 (A La Carte)',
+                    desc: '包含冷盤、熱食、主食分類。適合居酒屋或單點菜單。',
+                    icon: 'fas fa-book-open',
+                    sections: [
+                        { name: '推薦冷盤', items: [] },
+                        { name: '熱食炸物', items: [] },
+                        { name: '主食 (飯/麵)', items: [] }
+                    ]
+                },
+                {
+                    id: 'drinks',
+                    title: '飲品模板 (Drinks)',
+                    desc: '包含酒精與軟性飲料分類。',
+                    icon: 'fas fa-wine-glass',
+                    sections: [
+                        { name: '啤酒/沙瓦', items: [{name:'生啤酒', subName:'Draft Beer', price:600, desc:'', options:[]}] },
+                        { name: '軟性飲料', items: [{name:'可樂', subName:'Cola', price:400, desc:'', options:[]}] }
+                    ]
+                },
+                {
+                    id: 'simple',
+                    title: '簡單清單 (Simple List)',
+                    desc: '只有一個通用分類。',
+                    icon: 'fas fa-list',
+                    sections: [
+                        { name: '全部品項', items: [] }
+                    ]
+                },
+                {
+                    id: 'empty',
+                    title: '完全空白',
+                    desc: '建立一個空白分頁。',
+                    icon: 'far fa-square',
+                    sections: []
+                }
+            ];
+
+            const optionTemplates = [
+                {
+                    title: '漢堡配料 (Burger Toppings)',
+                    options: [
+                        { name: '培根', price: '1700' },
+                        { name: '起司', price: '300' },
+                        { name: '烤洋蔥', price: '300' }
+                    ]
+                },
+                {
+                    title: '牛排熟度 (Doneness)',
+                    options: [
+                        { name: '三分熟 (Rare)', price: '0' },
+                        { name: '五分熟 (Medium)', price: '0' },
+                        { name: '七分熟 (Well-done)', price: '0' }
+                    ]
+                },
+                {
+                    title: '飲料甜度/冰塊',
+                    options: [
+                        { name: '去冰', price: '0' },
+                        { name: '少冰', price: '0' },
+                        { name: '半糖', price: '0' },
+                        { name: '無糖', price: '0' }
+                    ]
+                }
+            ];
 
             const currentRest = computed(() => data.value[currentRestIndex.value]);
             const currentMenuTab = computed(() => currentRest.value?.tabs[currentMenuTabIdx.value]);
 
+            // --- 核心功能 ---
+
             const showToast = (msg, type = 'success') => {
-                toast.message = msg;
-                toast.type = type;
-                toast.show = true;
+                toast.message = msg; toast.type = type; toast.show = true;
                 setTimeout(() => toast.show = false, 3000);
             };
 
-            const logout = () => {
-                if(confirm('確定要登出並清除設定嗎？')) {
-                    localStorage.removeItem('gh_token');
-                    location.reload();
-                }
-            };
-
-            // GitHub API 讀取
             const loadFromGithub = async () => {
-                if(!config.token || !config.owner || !config.repo) {
-                    showToast('請填寫完整資訊', 'error');
-                    return;
-                }
-                
+                if(!config.token) return showToast('請輸入 Token', 'error');
                 loading.value = true;
                 try {
                     const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}`;
                     const res = await fetch(url, { headers: { 'Authorization': `token ${config.token}` } });
-                    
-                    if (!res.ok) throw new Error('連線失敗，請檢查 Token 與 Repo 名稱');
-                    
+                    if(!res.ok) throw new Error('連線失敗');
                     const json = await res.json();
                     sha.value = json.sha;
                     const content = new TextDecoder().decode(Uint8Array.from(atob(json.content), c => c.charCodeAt(0)));
-                    
                     data.value = JSON.parse(content);
-                    
                     localStorage.setItem('gh_token', config.token);
                     localStorage.setItem('gh_owner', config.owner);
                     localStorage.setItem('gh_repo', config.repo);
-                    
-                    showToast('資料讀取成功');
-                } catch (e) {
-                    console.error(e);
+                    showToast('讀取成功');
+                } catch(e) {
                     if(e.message.includes('404')) {
-                        if(confirm('找不到 data.json，要初始化一個新的嗎？')) {
-                             data.value = [];
-                             localStorage.setItem('gh_token', config.token);
-                             localStorage.setItem('gh_owner', config.owner);
-                             localStorage.setItem('gh_repo', config.repo);
-                             addRestaurant();
-                        }
-                    } else {
-                        showToast(e.message, 'error');
-                    }
-                } finally {
-                    loading.value = false;
-                }
+                        if(confirm('無資料，初始化？')) { data.value = []; localStorage.setItem('gh_token', config.token); }
+                    } else showToast(e.message, 'error');
+                } finally { loading.value = false; }
             };
 
-            // GitHub API 儲存
             const saveToGithub = async () => {
                 saving.value = true;
                 try {
                     const jsonString = JSON.stringify(data.value, null, 2);
                     const contentBase64 = btoa(String.fromCharCode(...new TextEncoder().encode(jsonString)));
-                    
-                    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}`;
-                    
-                    const body = {
-                        message: "Update menu via Admin Panel " + new Date().toLocaleString(),
-                        content: contentBase64,
-                        sha: sha.value
-                    };
-
-                    const res = await fetch(url, {
+                    const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}`, {
                         method: 'PUT',
-                        headers: {
-                            'Authorization': `token ${config.token}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(body)
+                        headers: { 'Authorization': `token ${config.token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: "Update menu", content: contentBase64, sha: sha.value })
                     });
-
-                    if (!res.ok) throw new Error('儲存失敗');
-                    
+                    if(!res.ok) throw new Error('儲存失敗');
                     const result = await res.json();
                     sha.value = result.content.sha;
                     hasUnsavedChanges.value = false;
-                    showToast('發布成功！手機重新整理即可看到。');
-                } catch (e) {
-                    showToast(e.message, 'error');
-                } finally {
-                    saving.value = false;
-                }
+                    showToast('發布成功');
+                } catch(e) { showToast(e.message, 'error'); } finally { saving.value = false; }
             };
 
-            // 操作邏輯
-            const selectRestaurant = (idx) => {
-                currentRestIndex.value = idx;
-                currentMenuTabIdx.value = 0;
-                activeTab.value = 'basic';
-            };
-
+            // --- 餐廳操作 ---
             const addRestaurant = () => {
-                data.value.push({
-                    id: 'new-rest-' + Date.now(),
+                const newRest = {
+                    id: 'rest-' + Date.now(),
                     name: '新餐廳',
                     subName: '',
                     heroInfo: '',
-                    tabs: [ { id: 'main', name: '主菜單', sections: [] } ]
-                });
+                    tabs: [] // 初始不給分頁，強制使用者按 + 新增
+                };
+                data.value.push(newRest);
                 selectRestaurant(data.value.length - 1);
+                // 自動觸發新增分頁視窗
+                setTimeout(() => showTabTemplateModal.value = true, 100);
             };
 
-            const deleteRestaurant = () => {
-                if(confirm(`確定要刪除「${currentRest.value.name}」嗎？此動作無法復原。`)) {
-                    data.value.splice(currentRestIndex.value, 1);
-                    if(data.value.length > 0) selectRestaurant(0);
-                    else currentRestIndex.value = -1;
-                }
-            };
+            const selectRestaurant = (idx) => { currentRestIndex.value = idx; currentMenuTabIdx.value = 0; activeTab.value = 'basic'; };
+            const deleteRestaurant = () => { if(confirm('刪除餐廳？')) { data.value.splice(currentRestIndex.value, 1); selectRestaurant(0); } };
 
-            const addTab = () => {
-                currentRest.value.tabs.push({ id: 'tab-'+Date.now(), name: '新分頁', sections: [] });
+            // --- 分頁操作 (使用模板) ---
+            const applyTabTemplate = (temp) => {
+                const newTab = {
+                    id: 'tab-' + Date.now(),
+                    name: temp.title.split(' ')[0], // 取前幾個字當標題
+                    sections: JSON.parse(JSON.stringify(temp.sections)) // 深度複製
+                };
+                currentRest.value.tabs.push(newTab);
                 currentMenuTabIdx.value = currentRest.value.tabs.length - 1;
+                showTabTemplateModal.value = false;
+                activeTab.value = 'menu'; // 自動切換到菜單頁籤
             };
-            const removeTab = (idx) => {
-                if(confirm('確定刪除此分頁？')) {
-                    currentRest.value.tabs.splice(idx, 1);
-                    currentMenuTabIdx.value = 0;
+
+            const removeTab = (i) => confirm('刪除分頁？') && currentRest.value.tabs.splice(i, 1);
+            
+            // --- 內容操作 ---
+            const addSection = () => currentMenuTab.value.sections.push({ name:'新分類', items:[] });
+            const removeSection = (i) => confirm('刪除分類？') && currentMenuTab.value.sections.splice(i, 1);
+            const moveSection = (i, d) => { const arr = currentMenuTab.value.sections; const n = i+d; if(n>=0 && n<arr.length) [arr[i], arr[n]] = [arr[n], arr[i]]; };
+
+            const addItem = (sec) => sec.items.push({ name:'', subName:'', price:0, desc:'', options:[] });
+            const removeItem = (sec, i) => sec.items.splice(i, 1);
+            const moveItem = (sec, i, d) => { const arr = sec.items; const n = i+d; if(n>=0 && n<arr.length) [arr[i], arr[n]] = [arr[n], arr[i]]; };
+            
+            const addOption = (item) => { if(!item.options) item.options=[]; item.options.push({name:'', price:''}); };
+            
+            // 魔術棒功能
+            const openOptionTemplateModal = (item) => {
+                currentEditingItem.value = item;
+                showOptionModal.value = true;
+            };
+            const applyOptionTemplate = (temp) => {
+                if(currentEditingItem.value) {
+                    if(!currentEditingItem.value.options) currentEditingItem.value.options = [];
+                    temp.options.forEach(opt => {
+                        currentEditingItem.value.options.push({ ...opt });
+                    });
+                    showToast(`已加入 ${temp.options.length} 個選項`);
                 }
+                showOptionModal.value = false;
             };
 
-            const addSection = () => {
-                currentMenuTab.value.sections.push({ name: '新分類', items: [] });
-            };
-            const removeSection = (idx) => {
-                if(confirm('刪除此分類與其下所有菜色？')) {
-                    currentMenuTab.value.sections.splice(idx, 1);
-                }
-            };
-            const moveSection = (idx, direction) => {
-                const arr = currentMenuTab.value.sections;
-                const newIdx = idx + direction;
-                if (newIdx >= 0 && newIdx < arr.length) {
-                    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-                }
-            };
+            const logout = () => { if(confirm('登出？')) { localStorage.removeItem('gh_token'); location.reload(); } };
 
-            const addItem = (section) => {
-                section.items.push({ name: '', subName: '', price: 0, desc: '', options: [] });
-            };
-            const removeItem = (section, idx) => {
-                section.items.splice(idx, 1);
-            };
-            const moveItem = (section, idx, direction) => {
-                const arr = section.items;
-                const newIdx = idx + direction;
-                if (newIdx >= 0 && newIdx < arr.length) {
-                    [arr[idx], arr[newIdx]] = [arr[newIdx], arr[idx]];
-                }
-            };
-
-            // 新版：新增選項 (直接加入空物件，不再 Prompt)
-            const addOption = (item) => {
-                if(!item.options) item.options = [];
-                item.options.push({ name: '', price: '' });
-            };
-
-            watch(data, () => {
-                if(sha.value) hasUnsavedChanges.value = true;
-            }, { deep: true });
-
-            if(isConfigured.value) {
-                setTimeout(loadFromGithub, 500);
-            }
+            watch(data, () => { if(sha.value) hasUnsavedChanges.value = true; }, { deep: true });
+            if(isConfigured.value) setTimeout(loadFromGithub, 500);
 
             return {
-                config, isConfigured, loading, saving, data, 
+                config, isConfigured, loading, saving, data, hasUnsavedChanges, toast,
                 currentRest, currentRestIndex, currentMenuTab, currentMenuTabIdx, activeTab,
-                hasUnsavedChanges, toast,
-                logout, loadFromGithub, saveToGithub,
-                selectRestaurant, addRestaurant, deleteRestaurant,
-                addTab, removeTab,
+                showTabTemplateModal, showOptionModal, tabTemplates, optionTemplates,
+                loadFromGithub, saveToGithub, logout,
+                selectRestaurant, deleteRestaurant, addRestaurant,
+                applyTabTemplate, removeTab, 
                 addSection, removeSection, moveSection,
-                addItem, removeItem, moveItem,
-                addOption
+                addItem, removeItem, moveItem, addOption,
+                openOptionTemplateModal, applyOptionTemplate
             };
         }
     }).mount('#app');
 </script>
-
-<style>
-    .form-input {
-        width: 100%;
-        padding: 0.5rem 0.75rem;
-        border: 1px solid #d1d5db;
-        border-radius: 0.5rem;
-        outline: none;
-        transition: border-color 0.2s;
-    }
-    .form-input:focus {
-        border-color: #4f46e5;
-        box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
-    }
-</style>
 </body>
 </html>
