@@ -1,0 +1,55 @@
+[
+  {
+    "id": "peter-luger",
+    "name": "Peter Luger",
+    "subName": "Steak House Tokyo",
+    "heroInfo": "午間套餐 ¥5,500",
+    "tabs": [
+      {
+        "id": "main",
+        "name": "午間菜單",
+        "sections": [
+          {
+            "name": "沙拉 Salad (選一)",
+            "items": [
+              {
+                "name": "凱薩沙拉",
+                "subName": "Caesar Salad",
+                "price": 0,
+                "desc": "搭配佩科里諾羅馬羊乳酪"
+              },
+              {
+                "name": "切碎沙拉",
+                "subName": "Chopped Salad",
+                "price": 0,
+                "desc": "含番茄、洋蔥、培根"
+              }
+            ]
+          },
+          {
+            "name": "主菜 Main Dish (選一)",
+            "items": [
+              {
+                "name": "盧格漢堡",
+                "subName": "Luger Burger",
+                "price": 0,
+                "desc": "附薯條",
+                "options": [
+                  { "name": "培根", "price": "+1700" },
+                  { "name": "起司", "price": "+300" }
+                ]
+              },
+              {
+                "name": "熟成牛排三明治",
+                "subName": "Steak Sandwich",
+                "price": 2500,
+                "isPlus": true,
+                "desc": "附薯條"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
