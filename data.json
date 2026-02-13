@@ -1,9 +1,9 @@
 [
   {
     "id": "peter-luger",
-    "name": "Peter Luger Steak House Tokyo",
-    "subName": "",
-    "heroInfo": "",
+    "name": "Peter Luger ",
+    "subName": "測試",
+    "heroInfo": "Steak House Tokyo",
     "tabs": [
       {
         "id": "main",
