@@ -194,7 +194,8 @@
                 "options": [
                   {
                     "name": "培根（ベーコン）",
-                    "price": "1700"
+                    "price": "1700",
+                    "isVariant": false
                   },
                   {
                     "name": "藍紋起司（ブルーチーズ）",
@@ -301,21 +302,103 @@
             "name": "前菜 (Appetizers)",
             "items": [
               {
-                "name": "海鮮拼盤（半份）",
-                "price": 13000,
+                "name": "海鮮拼盤",
+                "price": "",
                 "options": [
                   {
                     "name": "Regular",
-                    "price": "26,000"
+                    "price": "26,000",
+                    "isVariant": true
+                  },
+                  {
+                    "name": "Half",
+                    "price": "13000",
+                    "isVariant": true
                   }
                 ],
                 "subName": "シーフードプラッター（Half）",
                 "desc": ""
               },
               {
-                "name": "",
-                "price": 0,
-                "options": []
+                "name": "半殼生蠔 (4顆) ",
+                "price": 2600,
+                "options": [],
+                "subName": "オイスター"
+              },
+              {
+                "name": "特大鮮蝦雞尾酒 (4隻)",
+                "price": 4000,
+                "options": [],
+                "subName": "ジャンボシュリンプカクテル"
+              },
+              {
+                "name": "蟹肉餅",
+                "price": 4800,
+                "options": [],
+                "subName": "クラブケーキ"
+              }
+            ]
+          },
+          {
+            "name": "沙拉 (Salads)",
+            "items": [
+              {
+                "name": "切片番茄 配 Luger 醬汁",
+                "price": 2000,
+                "options": [],
+                "subName": "スライストマト、ルーガーソース"
+              },
+              {
+                "name": "切片番茄與洋蔥 配 Luger 醬汁",
+                "price": 2000,
+                "options": [],
+                "subName": "スライストマト&オニオン、ルーガーソース"
+              },
+              {
+                "name": "Luger 滋滋厚切培根 (單片)",
+                "price": 1600,
+                "options": [],
+                "subName": "ルーガーズ シズリング 厚切りベーコン"
+              },
+              {
+                "name": "冰山萵苣楔形沙拉",
+                "price": 3300,
+                "options": [],
+                "desc": "配番茄丁、培根、藍紋起司碎",
+                "subName": "アイスバーグレタスのウェッジサラダ"
+              },
+              {
+                "name": "凱薩沙拉",
+                "price": 2200,
+                "options": [],
+                "desc": "搭配佩科里諾羅馬起司",
+                "subName": "シーザーサラダ ペコリーノチーズ"
+              },
+              {
+                "name": "綜合綠沙拉",
+                "price": 1900,
+                "options": [],
+                "desc": "搭配油醋醬",
+                "subName": "ミックスグリーンサラダ"
+              }
+            ]
+          },
+          {
+            "name": "沙拉加點配料（Add to Any Salad）",
+            "items": [
+              {
+                "name": "藍紋起司",
+                "price": 500,
+                "options": [],
+                "subName": "ブルーチーズ",
+                "isPlus": true
+              },
+              {
+                "name": "碎培根",
+                "price": 1600,
+                "options": [],
+                "subName": "ベーコン",
+                "isPlus": true
               }
             ]
           }
