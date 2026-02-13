@@ -288,11 +288,19 @@
                             <div v-if="item.options && item.options.length > 0" class="option-group">
                                 <div v-if="item.optionsTitle" class="option-title">{{ item.optionsTitle }}</div>
                                 <div v-for="opt in item.options" class="option-item">
-                                    <span>+ {{ opt.name }}</span>
-                                    <span v-if="opt.price !== '0'" class="price-plus">+¥{{ opt.price }}</span>
+                                    <!-- 顯示名稱：若是加購且未標記為規格，顯示 +，否則直接顯示名稱 -->
+                                    <span>{{ !opt.isVariant ? '+ ' : '' }}{{ opt.name }}</span>
+                                    
+                                    <!-- 顯示價格：有價格時顯示 -->
+                                    <!-- 如果是加購 (isVariant=false) 顯示 +¥ -->
+                                    <!-- 如果是規格 (isVariant=true) 顯示 ¥ -->
+                                    <span v-if="opt.price && Number(opt.price) > 0" class="price-plus">
+                                        {{ !opt.isVariant ? '+' : '' }}¥{{ Number(opt.price).toLocaleString() }}
+                                    </span>
                                 </div>
                             </div>
                         </div>
+                        <!-- 如果主餐價格大於0才顯示 -->
                         <div v-if="item.price > 0" class="item-price" :class="{ 'price-plus': item.isPlus }">
                             {{ item.isPlus ? '+' : '' }}¥{{ Number(item.price).toLocaleString() }}
                         </div>
