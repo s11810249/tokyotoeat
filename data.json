@@ -421,5 +421,14 @@
     "coverImage": "https://www.aman.com/sites/default/files/styles/full_size_extra_large/public/2021-03/Aman-Tokyo_Dining-Lounge-Hero-2.jpg?itok=13rx0bud",
     "address": "東京都千代田区大手町1-5-6 大手町タワー 33F",
     "googleMapLink": "https://maps.app.goo.gl/KrKvw3qb2pk878HT7"
+  },
+  {
+    "id": "lemon-gyutan",
+    "name": "牛舌之檸檬 新宿總本店",
+    "tabs": [],
+    "subName": "牛たんの檸檬 新宿総本店",
+    "address": "東京都新宿区西新宿7-16-12 YSビル B1F",
+    "googleMapLink": "https://maps.app.goo.gl/ceywTpGm3k7MBE6w8?g_st=ic",
+    "coverImage": "https://tblg.k-img.com/resize/640x360c/restaurant/images/Rvw/184104/1d9a0aba69efa65a181fb881eeab1b67.jpg"
   }
 ]
