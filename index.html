@@ -142,8 +142,21 @@
         .item-name-zh { font-size: 16px; font-weight: 500; margin-bottom: 3px; display: block; }
         .item-meta { font-size: 13px; color: #95a5a6; line-height: 1.4; }
         .item-price { font-size: 16px; font-weight: 600; white-space: nowrap; }
+        
+        /* Updated Desc Style for readability */
+        .item-desc {
+            font-size: 13px;
+            color: #6d645e;
+            margin-top: 8px;
+            line-height: 1.5;
+            font-family: "Noto Sans TC", sans-serif;
+        }
+
         .price-plus { color: var(--accent-color); }
+        
+        /* Options Section */
         .option-group { margin-top: 10px; padding-left: 10px; border-left: 2px solid #eee; }
+        .option-title { font-size: 12px; font-weight: bold; color: #7f8c8d; margin-bottom: 4px; }
         .option-item { display: flex; justify-content: space-between; font-size: 13px; color: #666; margin-top: 5px; }
         
         /* Note Box */
@@ -231,13 +244,14 @@
                             <span class="item-name-zh">{{ item.name }}</span>
                             <div class="item-meta">
                                 {{ item.subName }}
-                                <br v-if="item.desc">{{ item.desc }}
+                                <div v-if="item.desc" class="item-desc">{{ item.desc }}</div>
                             </div>
                             <!-- Options -->
-                            <div v-if="item.options" class="option-group">
+                            <div v-if="item.options && item.options.length > 0" class="option-group">
+                                <div v-if="item.optionsTitle" class="option-title">{{ item.optionsTitle }}</div>
                                 <div v-for="opt in item.options" class="option-item">
                                     <span>+ {{ opt.name }}</span>
-                                    <span class="price-plus">{{ opt.price }}</span>
+                                    <span v-if="opt.price !== '0'" class="price-plus">+¥{{ opt.price }}</span>
                                 </div>
                             </div>
                         </div>
