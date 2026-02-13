@@ -307,7 +307,7 @@
                 "options": [
                   {
                     "name": "Regular",
-                    "price": "26,000",
+                    "price": "26000",
                     "isVariant": true
                   },
                   {
@@ -317,7 +317,8 @@
                   }
                 ],
                 "subName": "シーフードプラッター（Half）",
-                "desc": ""
+                "desc": "",
+                "optionsTitle": "規格尺寸"
               },
               {
                 "name": "半殼生蠔 (4顆) ",
