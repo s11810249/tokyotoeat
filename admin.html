@@ -128,14 +128,19 @@
                 <!-- 2. Menu Tab -->
                 <div v-if="activeTab === 'menu'" class="max-w-4xl mx-auto">
                     
-                    <!-- Tabs Nav -->
+                    <!-- Tabs Nav (可編輯版) -->
                     <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
                         <div v-for="(tab, tIdx) in currentRest.tabs" :key="tIdx" 
                              @click="currentMenuTabIdx = tIdx"
                              class="px-5 py-2 rounded-lg text-sm font-bold cursor-pointer border transition whitespace-nowrap flex items-center gap-2"
                              :class="currentMenuTabIdx === tIdx ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'">
-                            {{ tab.name }}
-                            <i v-if="currentRest.tabs.length > 1 && currentMenuTabIdx === tIdx" @click.stop="removeTab(tIdx)" class="fas fa-times opacity-60 hover:opacity-100 hover:text-red-200"></i>
+                            
+                            <!-- 顯示狀態 (非選中) -->
+                            <span v-if="currentMenuTabIdx !== tIdx">{{ tab.name }}</span>
+                            <!-- 編輯狀態 (選中) -->
+                            <input v-else v-model="tab.name" class="bg-transparent border-b border-blue-400 text-white outline-none w-24 text-center placeholder-blue-300" @click.stop placeholder="分頁名稱">
+                            
+                            <i v-if="currentRest.tabs.length > 1 && currentMenuTabIdx === tIdx" @click.stop="removeTab(tIdx)" class="fas fa-times ml-2 opacity-60 hover:opacity-100 hover:text-red-200"></i>
                         </div>
                         <button @click="showTabTemplateModal = true" class="w-9 h-9 rounded-lg bg-gray-200 text-gray-500 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center flex-shrink-0 transition"><i class="fas fa-plus"></i></button>
                     </div>
@@ -209,22 +214,27 @@
                                             </div>
                                         </div>
 
-                                        <!-- Options -->
-                                        <div class="bg-white border border-gray-200 rounded-lg p-3">
-                                            <div class="text-xs font-bold text-gray-400 mb-2 flex justify-between items-center">
-                                                <span>客製化選項 / 加購項目</span>
-                                                <button @click="openOptionTemplateModal(item)" class="text-blue-600 hover:text-blue-800 text-xs flex items-center bg-blue-50 px-2 py-1 rounded transition"><i class="fas fa-magic mr-1"></i> 套用模板</button>
+                                        <!-- Options (更友善的列表式輸入) -->
+                                        <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                            <div class="flex justify-between items-center mb-3">
+                                                <span class="text-xs font-bold text-gray-500 uppercase">客製化選項 / 加購項目</span>
+                                                <button @click="openOptionTemplateModal(item)" class="text-blue-600 hover:text-blue-800 text-xs font-bold bg-blue-50 px-2 py-1 rounded transition flex items-center"><i class="fas fa-magic mr-1"></i> 快速模板</button>
                                             </div>
-                                            <div class="flex flex-wrap gap-2">
-                                                <div v-for="(opt, oIdx) in item.options" :key="oIdx" class="flex items-center bg-gray-50 border border-gray-200 rounded px-2 py-1">
-                                                    <input v-model="opt.name" class="bg-transparent w-20 text-xs outline-none font-medium" placeholder="選項名">
-                                                    <span class="text-gray-300 mx-1">|</span>
-                                                    <span class="text-gray-400 text-xs mr-1">+</span>
-                                                    <input v-model="opt.price" class="bg-transparent w-10 text-xs outline-none font-bold text-blue-600" placeholder="0">
-                                                    <i @click="item.options.splice(oIdx, 1)" class="fas fa-times ml-2 text-gray-300 hover:text-red-500 cursor-pointer text-xs"></i>
+                                            
+                                            <div v-if="item.options.length > 0" class="space-y-2 mb-3">
+                                                <div v-for="(opt, oIdx) in item.options" :key="oIdx" class="flex items-center gap-2">
+                                                    <input v-model="opt.name" class="std-input py-1 text-sm flex-1" placeholder="選項名稱 (如: 培根)">
+                                                    <div class="flex items-center bg-white border border-gray-300 rounded px-2">
+                                                        <span class="text-gray-400 text-xs mr-1">+</span>
+                                                        <input v-model="opt.price" class="w-12 py-1 text-sm outline-none font-bold text-gray-700 text-right" placeholder="0">
+                                                    </div>
+                                                    <button @click="item.options.splice(oIdx, 1)" class="text-gray-400 hover:text-red-500 w-6 h-6 flex items-center justify-center"><i class="fas fa-trash-alt"></i></button>
                                                 </div>
-                                                <button @click="addOption(item)" class="text-xs bg-gray-100 hover:bg-gray-200 text-gray-500 px-2 py-1 rounded transition"><i class="fas fa-plus"></i></button>
                                             </div>
+                                            
+                                            <button @click="addOption(item)" class="w-full py-2 border border-dashed border-gray-300 rounded text-xs text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition font-bold">
+                                                + 新增選項
+                                            </button>
                                         </div>
 
                                         <div class="mt-4 pt-3 border-t border-gray-200 flex justify-end">
