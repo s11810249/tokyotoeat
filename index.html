@@ -120,11 +120,49 @@
         }
         .address-link:hover { color: var(--accent-color); }
 
-        /* Tabs */
-        .tab-wrapper { padding: 15px 20px 5px; background: #fff; position: sticky; top: var(--header-height); z-index: 90; }
-        .tab-container { display: flex; background: #e0e0e0; padding: 4px; border-radius: 30px; max-width: 400px; margin: 0 auto; }
-        .tab-btn { flex: 1; padding: 8px 15px; border: none; background: transparent; font-size: 14px; color: #666; cursor: pointer; border-radius: 25px; transition: all 0.3s; }
-        .tab-btn.active { background: #fff; color: var(--primary-text); box-shadow: 0 2px 5px rgba(0,0,0,0.1); font-weight: bold; }
+        /* Tabs (Optimized for Horizontal Scroll) */
+        .tab-wrapper { 
+            padding: 12px 0; 
+            background: #fff; 
+            position: sticky; 
+            top: var(--header-height); 
+            z-index: 90; 
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+        .tab-container { 
+            display: flex; 
+            overflow-x: auto; 
+            padding: 0 20px; 
+            gap: 12px;
+            /* Hide Scrollbar */
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .tab-container::-webkit-scrollbar { display: none; /* Chrome, Safari */ }
+        
+        .tab-btn { 
+            flex: 0 0 auto; /* Don't shrink */
+            padding: 8px 24px; 
+            border: 1px solid #e0e0e0; 
+            background: #fff; 
+            font-size: 14px; 
+            color: #64748b; 
+            cursor: pointer; 
+            border-radius: 50px; 
+            transition: all 0.2s; 
+            white-space: nowrap;
+            font-weight: 500;
+        }
+        .tab-btn:hover { background-color: #f8fafc; }
+        
+        .tab-btn.active { 
+            background: var(--primary-text); 
+            color: #fff; 
+            border-color: var(--primary-text); 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15); 
+            font-weight: bold;
+            transform: translateY(-1px);
+        }
 
         /* Accordion List */
         .menu-section { border-bottom: 8px solid #f8f9fa; }
