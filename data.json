@@ -1,9 +1,9 @@
 [
   {
     "id": "peter-luger",
-    "name": "Peter Luger",
+    "name": "Peter Luger Steak House Tokyo",
     "subName": "",
-    "heroInfo": "Steak House Tokyo",
+    "heroInfo": "",
     "tabs": [
       {
         "id": "main",
@@ -151,9 +151,9 @@
         ]
       }
     ],
-    "coverImage": "",
+    "coverImage": "https://cdn1.tablecheck.com/menu_items/67f514f8670724ad336da8f4/images/xl/a4245254.jpg?1744114937",
     "address": "",
-    "googleMapLink": "",
+    "googleMapLink": "https://maps.app.goo.gl/oLocrsdjw1th6FkbA",
     "businessHours": "",
     "reservationLink": "",
     "note": "所有金額均為含稅價，需另加收 10% 服務費 。"
