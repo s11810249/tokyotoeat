@@ -139,6 +139,24 @@
             ]
           }
         ]
+      },
+      {
+        "id": "t1771006328389",
+        "name": "特別午餐套餐 (Special Lunch)",
+        "sections": [
+          {
+            "name": "全部品項",
+            "items": [
+              {
+                "name": "特別午餐套餐",
+                "price": 5000,
+                "options": [],
+                "subName": "特別ランチセット",
+                "desc": "包含沙拉、主菜各選一道，以及咖啡或紅茶"
+              }
+            ]
+          }
+        ]
       }
     ],
     "coverImage": "https://cdn1.tablecheck.com/menu_items/67f514f8670724ad336da8f4/images/xl/a4245254.jpg?1744114937",
