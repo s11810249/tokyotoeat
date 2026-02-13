@@ -10,15 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', 'Noto Sans TC', sans-serif; background-color: #f3f4f6; color: #1e293b; }
-        /* 輸入框樣式優化 */
-        .std-input {
-            width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px;
-            font-size: 14px; outline: none; transition: 0.2s; background: white;
-        }
+        .std-input { width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; font-size: 14px; outline: none; transition: 0.2s; background: white; }
         .std-input:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
         .std-label { display: block; font-size: 12px; font-weight: 700; color: #64748b; margin-bottom: 4px; }
-        
-        /* 隱藏捲軸但保留功能 */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
@@ -27,181 +21,140 @@
 
 <div id="app" class="h-screen flex flex-col overflow-hidden">
 
-    <!-- Login Overlay -->
-    <div v-if="!isConfigured" class="fixed inset-0 bg-gray-900/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden p-8 text-center">
-            <div class="text-blue-600 text-5xl mb-4"><i class="fas fa-database"></i></div>
-            <h2 class="text-xl font-bold text-gray-800 mb-6">連結 GitHub 資料庫</h2>
-            <input type="password" v-model="config.token" class="std-input mb-4" placeholder="Token (ghp_...)">
+    <!-- Login -->
+    <div v-if="!isConfigured" class="fixed inset-0 bg-gray-900/80 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-8 text-center">
+            <h2 class="text-xl font-bold mb-6">連結 GitHub</h2>
+            <input type="password" v-model="config.token" class="std-input mb-4" placeholder="Token">
             <div class="flex gap-3 mb-6">
                 <input v-model="config.owner" class="std-input" placeholder="Owner">
                 <input v-model="config.repo" class="std-input" placeholder="Repo">
             </div>
-            <button @click="loadFromGithub" :disabled="loading" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition font-bold shadow-lg">
-                {{ loading ? '連線中...' : '開始管理' }}
-            </button>
+            <button @click="loadFromGithub" :disabled="loading" class="w-full bg-blue-600 text-white py-3 rounded-lg font-bold">Start</button>
         </div>
     </div>
 
-    <!-- Main Interface -->
+    <!-- Main -->
     <div v-else class="flex h-full">
-        
         <!-- Sidebar -->
-        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20 shadow-sm">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+        <aside class="w-64 bg-white border-r border-gray-200 flex flex-col z-20">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50">
                 <span class="font-bold text-gray-700">餐廳列表</span>
-                <button @click="addRestaurant" class="bg-blue-600 hover:bg-blue-700 text-white w-8 h-8 rounded-full transition flex items-center justify-center shadow-sm">
-                    <i class="fas fa-plus text-xs"></i>
-                </button>
+                <button @click="addRestaurant" class="bg-blue-600 text-white w-8 h-8 rounded-full flex justify-center items-center"><i class="fas fa-plus text-xs"></i></button>
             </div>
             <div class="flex-1 overflow-y-auto p-2 space-y-1">
-                <div v-for="(rest, idx) in data" :key="rest.id" 
-                     @click="selectRestaurant(idx)"
-                     class="p-3 rounded-lg cursor-pointer transition text-sm font-medium flex items-center border border-transparent"
+                <div v-for="(rest, idx) in data" :key="rest.id" @click="selectRestaurant(idx)"
+                     class="p-3 rounded-lg cursor-pointer text-sm font-medium flex items-center border border-transparent"
                      :class="currentRestIndex === idx ? 'bg-blue-50 text-blue-700 border-blue-200' : 'text-gray-600 hover:bg-gray-100'">
-                    <i class="fas fa-store mr-3 opacity-50"></i> {{ rest.name || '未命名' }}
+                    {{ rest.name || 'New' }}
                 </div>
             </div>
-            <button @click="logout" class="p-4 text-xs text-gray-400 hover:text-red-500 border-t border-gray-100 text-left transition">
-                <i class="fas fa-sign-out-alt mr-2"></i> 登出並清除設定
-            </button>
+            <button @click="logout" class="p-4 text-xs text-gray-400 border-t hover:text-red-500">Logout</button>
         </aside>
 
-        <!-- Main Editor -->
+        <!-- Editor -->
         <main class="flex-1 flex flex-col bg-gray-50 min-w-0">
-            
-            <!-- Header -->
-            <header class="bg-white h-16 border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-10 shadow-sm">
+            <header class="bg-white h-16 border-b flex items-center justify-between px-6 sticky top-0 z-10">
                 <div class="flex items-center gap-4">
-                    <h1 class="text-xl font-bold text-gray-800">{{ currentRest ? currentRest.name : '請選擇餐廳' }}</h1>
-                    <span v-if="hasUnsavedChanges" class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-bold flex items-center">
-                        <i class="fas fa-circle text-[8px] mr-2"></i> 未儲存變更
-                    </span>
+                    <h1 class="text-xl font-bold">{{ currentRest ? currentRest.name : 'Select' }}</h1>
+                    <span v-if="hasUnsavedChanges" class="text-xs bg-yellow-100 text-yellow-700 px-3 py-1 rounded-full font-bold">Unsaved</span>
                 </div>
                 <div class="flex gap-3">
-                    <a :href="`https://${config.owner}.github.io/${config.repo}/`" target="_blank" class="text-gray-500 hover:text-blue-600 text-sm flex items-center px-3 py-2 rounded hover:bg-gray-100 transition"><i class="fas fa-external-link-alt mr-2"></i> 預覽</a>
-                    <button @click="saveToGithub" :disabled="saving" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold transition flex items-center shadow-md">
-                        <i v-if="saving" class="fas fa-spinner fa-spin mr-2"></i> {{ saving ? '發布中...' : '發布更新' }}
+                    <a :href="`https://${config.owner}.github.io/${config.repo}/`" target="_blank" class="text-gray-500 text-sm flex items-center px-3 hover:bg-gray-100 rounded">Preview</a>
+                    <button @click="saveToGithub" :disabled="saving" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg text-sm font-bold shadow-md">
+                        {{ saving ? 'Saving...' : 'Publish' }}
                     </button>
                 </div>
             </header>
 
-            <!-- Editor Content -->
             <div v-if="currentRest" class="flex-1 overflow-y-auto p-8">
-                
-                <!-- Toggle Tabs -->
+                <!-- Tab Toggle -->
                 <div class="flex justify-center mb-8">
-                    <div class="bg-gray-200 p-1 rounded-lg flex text-sm font-bold shadow-inner">
-                        <button @click="activeTab = 'basic'" class="px-8 py-2 rounded-md transition" :class="activeTab==='basic' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'">基本資料</button>
-                        <button @click="activeTab = 'menu'" class="px-8 py-2 rounded-md transition" :class="activeTab==='menu' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'">菜單內容</button>
+                    <div class="bg-gray-200 p-1 rounded-lg flex text-sm font-bold">
+                        <button @click="activeTab = 'basic'" class="px-8 py-2 rounded-md transition" :class="activeTab==='basic' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'">Basic Info</button>
+                        <button @click="activeTab = 'menu'" class="px-8 py-2 rounded-md transition" :class="activeTab==='menu' ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500'">Menu Content</button>
                     </div>
                 </div>
 
                 <!-- 1. Info Tab -->
-                <div v-if="activeTab === 'basic'" class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-                    <div class="space-y-6">
-                        <div class="grid grid-cols-2 gap-6">
-                            <div><label class="std-label">中文名稱</label><input v-model="currentRest.name" class="std-input text-lg font-bold"></div>
-                            <div><label class="std-label">原文/英文名稱</label><input v-model="currentRest.subName" class="std-input"></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-6">
-                            <div><label class="std-label">ID (系統用)</label><input v-model="currentRest.id" class="std-input bg-gray-50"></div>
-                            <div><label class="std-label">標籤文字 (Hero Tag)</label><input v-model="currentRest.heroInfo" class="std-input" placeholder="例如：午間套餐 ¥5,500"></div>
-                        </div>
-                        
-                        <div class="pt-4 border-t border-gray-100">
-                            <h3 class="text-sm font-bold text-gray-800 mb-4">更多資訊</h3>
-                            <div class="grid grid-cols-1 gap-4">
-                                <div><label class="std-label">封面圖片 URL</label><input v-model="currentRest.coverImage" class="std-input" placeholder="https://..."></div>
-                                <div><label class="std-label">地址 (Address)</label><input v-model="currentRest.address" class="std-input" placeholder="請輸入地址"></div>
-                                <div><label class="std-label">Google Maps 連結</label><input v-model="currentRest.googleMapLink" class="std-input text-blue-600" placeholder="https://maps.google.com/..."></div>
-                                <div><label class="std-label">備註 / 服務費 / 規定</label><textarea v-model="currentRest.note" class="std-input h-24" placeholder="例如：另收 10% 服務費..."></textarea></div>
-                            </div>
-                        </div>
-
-                        <div class="pt-6 border-t border-gray-100 text-right">
-                            <button @click="deleteRestaurant" class="text-red-500 hover:text-red-700 text-sm font-bold bg-red-50 px-4 py-2 rounded hover:bg-red-100 transition">刪除此餐廳</button>
-                        </div>
+                <div v-if="activeTab === 'basic'" class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-gray-200 space-y-6">
+                    <div class="grid grid-cols-2 gap-6">
+                        <div><label class="std-label">中文名稱</label><input v-model="currentRest.name" class="std-input text-lg font-bold"></div>
+                        <div><label class="std-label">原文名稱</label><input v-model="currentRest.subName" class="std-input"></div>
                     </div>
+                    <div class="grid grid-cols-2 gap-6">
+                        <div><label class="std-label">ID</label><input v-model="currentRest.id" class="std-input bg-gray-50"></div>
+                        <div><label class="std-label">Tag (Hero Info)</label><input v-model="currentRest.heroInfo" class="std-input"></div>
+                    </div>
+                    <div><label class="std-label">圖片 URL</label><input v-model="currentRest.coverImage" class="std-input"></div>
+                    <div><label class="std-label">地址</label><input v-model="currentRest.address" class="std-input"></div>
+                    <div><label class="std-label">Google Maps Link</label><input v-model="currentRest.googleMapLink" class="std-input text-blue-600"></div>
+                    <div><label class="std-label">備註 (可換行)</label><textarea v-model="currentRest.note" class="std-input h-24"></textarea></div>
+                    <div class="pt-6 border-t text-right"><button @click="deleteRestaurant" class="text-red-500 text-sm font-bold">Delete Restaurant</button></div>
                 </div>
 
                 <!-- 2. Menu Tab -->
                 <div v-if="activeTab === 'menu'" class="max-w-4xl mx-auto">
-                    
-                    <!-- Tabs Nav (可編輯版) -->
+                    <!-- Tabs Nav -->
                     <div class="flex items-center gap-2 mb-6 overflow-x-auto pb-2 no-scrollbar">
                         <div v-for="(tab, tIdx) in currentRest.tabs" :key="tIdx" 
                              @click="currentMenuTabIdx = tIdx"
                              class="px-5 py-2 rounded-lg text-sm font-bold cursor-pointer border transition whitespace-nowrap flex items-center gap-2"
-                             :class="currentMenuTabIdx === tIdx ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'">
-                            
-                            <!-- 顯示狀態 (非選中) -->
+                             :class="currentMenuTabIdx === tIdx ? 'bg-blue-600 text-white border-blue-600' : 'bg-white border-gray-200 text-gray-500'">
                             <span v-if="currentMenuTabIdx !== tIdx">{{ tab.name }}</span>
-                            <!-- 編輯狀態 (選中) -->
-                            <input v-else v-model="tab.name" class="bg-transparent border-b border-blue-400 text-white outline-none w-24 text-center placeholder-blue-300" @click.stop placeholder="分頁名稱">
-                            
-                            <i v-if="currentRest.tabs.length > 1 && currentMenuTabIdx === tIdx" @click.stop="removeTab(tIdx)" class="fas fa-times ml-2 opacity-60 hover:opacity-100 hover:text-red-200"></i>
+                            <input v-else v-model="tab.name" class="bg-transparent border-b border-blue-300 text-white outline-none w-24 text-center placeholder-blue-300" @click.stop>
+                            <i v-if="currentRest.tabs.length > 1 && currentMenuTabIdx === tIdx" @click.stop="removeTab(tIdx)" class="fas fa-times ml-2 opacity-50 hover:opacity-100"></i>
                         </div>
-                        <button @click="showTabTemplateModal = true" class="w-9 h-9 rounded-lg bg-gray-200 text-gray-500 hover:bg-blue-100 hover:text-blue-600 flex items-center justify-center flex-shrink-0 transition"><i class="fas fa-plus"></i></button>
+                        <button @click="showTabTemplateModal = true" class="w-9 h-9 rounded-lg bg-gray-200 text-gray-500 hover:bg-blue-100 hover:text-blue-600 flex justify-center items-center flex-shrink-0"><i class="fas fa-plus"></i></button>
                     </div>
 
                     <!-- Sections -->
                     <div v-if="currentMenuTab" class="space-y-8 pb-20">
                         <div v-if="currentMenuTab.sections.length === 0" class="text-center py-12 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
-                            <p class="text-gray-400 mb-4 font-bold">此分頁還沒有內容</p>
-                            <button @click="addSection" class="bg-white border border-gray-300 text-gray-600 px-4 py-2 rounded shadow-sm hover:text-blue-600 hover:border-blue-300 font-bold transition">建立第一個分類</button>
+                            <button @click="addSection" class="text-blue-600 font-bold hover:underline">Add First Section</button>
                         </div>
 
                         <div v-for="(section, sIdx) in currentMenuTab.sections" :key="sIdx" class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                            <!-- Section Header -->
                             <div class="bg-gray-50 px-5 py-3 border-b border-gray-200 flex items-center justify-between">
                                 <div class="flex items-center gap-3 flex-1">
                                     <div class="flex flex-col text-gray-300">
                                         <i @click="moveSection(sIdx, -1)" class="fas fa-caret-up hover:text-blue-600 cursor-pointer"></i>
                                         <i @click="moveSection(sIdx, 1)" class="fas fa-caret-down hover:text-blue-600 cursor-pointer"></i>
                                     </div>
-                                    <input v-model="section.name" class="bg-transparent font-bold text-gray-700 outline-none w-full text-lg placeholder-gray-400" placeholder="分類名稱 (如: 主菜)">
+                                    <input v-model="section.name" class="bg-transparent font-bold text-gray-700 outline-none w-full text-lg" placeholder="Section Name">
                                 </div>
-                                <button @click="removeSection(sIdx)" class="text-gray-300 hover:text-red-500 p-2"><i class="fas fa-trash-alt"></i></button>
+                                <i @click="removeSection(sIdx)" class="fas fa-trash-alt text-gray-300 hover:text-red-500 cursor-pointer p-2"></i>
                             </div>
 
-                            <!-- Item List -->
                             <div class="divide-y divide-gray-100">
                                 <div v-for="(item, iIdx) in section.items" :key="iIdx" class="group">
-                                    
-                                    <!-- Collapsed View (Summary) -->
-                                    <div class="px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-blue-50 transition" 
-                                         @click="item.isOpen = !item.isOpen"
-                                         v-if="!item.isOpen">
+                                    <!-- Collapsed -->
+                                    <div class="px-5 py-3 flex items-center justify-between cursor-pointer hover:bg-blue-50 transition" @click="item.isOpen = !item.isOpen" v-if="!item.isOpen">
                                         <div class="flex items-center gap-4">
-                                            <div class="flex flex-col text-gray-300 group-hover:text-gray-400 w-4">
+                                            <div class="flex flex-col text-gray-300 w-4">
                                                 <i @click.stop="moveItem(section, iIdx, -1)" class="fas fa-caret-up hover:text-blue-600"></i>
                                                 <i @click.stop="moveItem(section, iIdx, 1)" class="fas fa-caret-down hover:text-blue-600"></i>
                                             </div>
                                             <div>
                                                 <div class="font-bold text-gray-800">{{ item.name || '(未命名)' }}</div>
-                                                <div class="text-xs text-gray-400">{{ item.subName }}</div>
                                             </div>
                                         </div>
-                                        <div class="flex items-center gap-4">
-                                            <span class="font-bold text-gray-600">¥{{ item.price }}</span>
-                                            <button class="text-blue-500 text-sm font-bold hover:underline">編輯</button>
-                                        </div>
+                                        <span class="font-bold text-gray-600">¥{{ item.price }}</span>
                                     </div>
 
-                                    <!-- Expanded View (Editor) -->
+                                    <!-- Expanded Editor -->
                                     <div v-else class="p-5 bg-blue-50/50 border-l-4 border-blue-500">
                                         <div class="flex justify-between items-start mb-4">
-                                            <h4 class="text-xs font-bold text-blue-500 uppercase tracking-wider">編輯菜色</h4>
-                                            <button @click="item.isOpen = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-chevron-up"></i> 收起</button>
+                                            <h4 class="text-xs font-bold text-blue-500 uppercase">編輯菜色</h4>
+                                            <button @click="item.isOpen = false" class="text-gray-400 hover:text-gray-600 text-xs"><i class="fas fa-chevron-up"></i> 收起</button>
                                         </div>
                                         
                                         <div class="grid grid-cols-2 gap-4 mb-4">
-                                            <div><label class="std-label">中文菜名</label><input v-model="item.name" class="std-input font-bold" placeholder="輸入菜名"></div>
-                                            <div><label class="std-label">原文/英文</label><input v-model="item.subName" class="std-input" placeholder="輸入原文"></div>
+                                            <div><label class="std-label">中文菜名</label><input v-model="item.name" class="std-input font-bold"></div>
+                                            <div><label class="std-label">原文/英文</label><input v-model="item.subName" class="std-input"></div>
                                         </div>
                                         <div class="grid grid-cols-3 gap-4 mb-4">
-                                            <div class="col-span-2"><label class="std-label">描述</label><input v-model="item.desc" class="std-input" placeholder="描述內容"></div>
+                                            <div class="col-span-2"><label class="std-label">描述</label><input v-model="item.desc" class="std-input"></div>
                                             <div>
                                                 <label class="std-label">價格</label>
                                                 <div class="flex items-center">
@@ -209,54 +162,54 @@
                                                     <input v-model.number="item.price" type="number" class="std-input font-bold">
                                                 </div>
                                                 <label class="flex items-center mt-2 text-xs text-gray-500 cursor-pointer">
-                                                    <input type="checkbox" v-model="item.isPlus" class="mr-1 accent-blue-600"> 顯示為加價購 (+)
+                                                    <input type="checkbox" v-model="item.isPlus" class="mr-1 accent-blue-600"> 加價購 (+)
                                                 </label>
                                             </div>
                                         </div>
 
-                                        <!-- Options (條列式輸入) -->
+                                        <!-- Option List Editor (Improved) -->
                                         <div class="bg-white border border-gray-200 rounded-lg p-4">
                                             <div class="flex justify-between items-center mb-3">
-                                                <!-- 選項標題輸入框 -->
-                                                <input v-model="item.optionsTitle" class="text-xs font-bold text-gray-600 uppercase w-64 bg-transparent border border-transparent hover:border-gray-300 focus:border-blue-500 rounded px-1 outline-none transition" placeholder="客製化選項 / 加購項目 (點擊輸入標題)">
-                                                
-                                                <button @click="openOptionTemplateModal(item)" class="text-blue-600 hover:text-blue-800 text-xs font-bold bg-blue-50 px-2 py-1 rounded transition flex items-center"><i class="fas fa-magic mr-1"></i> 快速模板</button>
+                                                <input v-model="item.optionsTitle" class="text-xs font-bold text-gray-600 uppercase w-64 bg-transparent border-b border-transparent hover:border-gray-300 focus:border-blue-500 outline-none" placeholder="客製化選項標題 (如：選擇尺寸)">
+                                                <button @click="openOptionTemplateModal(item)" class="text-blue-600 text-xs font-bold bg-blue-50 px-2 py-1 rounded hover:bg-blue-100"><i class="fas fa-magic mr-1"></i> 模板</button>
                                             </div>
                                             
-                                            <!-- 選項列表 -->
-                                            <div v-if="item.options.length > 0" class="space-y-2 mb-3">
-                                                <div v-for="(opt, oIdx) in item.options" :key="oIdx" class="flex items-center gap-2">
-                                                    <input v-model="opt.name" class="std-input py-1 text-sm flex-1" placeholder="選項名稱 (如: 培根)">
-                                                    <div class="flex items-center bg-white border border-gray-300 rounded px-2">
-                                                        <span class="text-gray-400 text-xs mr-1">+</span>
-                                                        <input v-model="opt.price" class="w-12 py-1 text-sm outline-none font-bold text-gray-700 text-right" placeholder="0">
+                                            <!-- Vertical List of Options -->
+                                            <div class="space-y-2 mb-3">
+                                                <div v-for="(opt, oIdx) in item.options" :key="oIdx" class="flex items-center gap-3">
+                                                    
+                                                    <!-- 顯示模式切換：加購 vs 規格 -->
+                                                    <button @click="opt.isVariant = !opt.isVariant" 
+                                                            class="text-xs px-2 py-1.5 rounded border transition font-bold whitespace-nowrap w-16"
+                                                            :class="opt.isVariant ? 'bg-indigo-100 text-indigo-700 border-indigo-200' : 'bg-green-50 text-green-700 border-green-200'"
+                                                            :title="opt.isVariant ? '顯示為規格 (無+號)' : '顯示為加購 (有+號)'">
+                                                        {{ opt.isVariant ? '🏷️ 規格' : '➕ 加購' }}
+                                                    </button>
+
+                                                    <div class="flex-1">
+                                                        <input v-model="opt.name" class="std-input py-1 text-sm" placeholder="選項名稱 (如: 大份)">
                                                     </div>
-                                                    <button @click="item.options.splice(oIdx, 1)" class="text-gray-400 hover:text-red-500 w-6 h-6 flex items-center justify-center"><i class="fas fa-trash-alt"></i></button>
+                                                    <div class="w-24 relative">
+                                                        <span class="absolute left-2 top-1.5 text-gray-400 text-xs">¥</span>
+                                                        <input v-model="opt.price" class="std-input py-1 text-sm pl-5 font-bold" placeholder="價格">
+                                                    </div>
+                                                    <button @click="item.options.splice(oIdx, 1)" class="text-gray-400 hover:text-red-500 px-2"><i class="fas fa-trash-alt"></i></button>
                                                 </div>
                                             </div>
                                             
-                                            <button @click="addOption(item)" class="w-full py-2 border border-dashed border-gray-300 rounded text-xs text-gray-500 hover:bg-gray-50 hover:text-blue-600 transition font-bold">
-                                                + 新增選項
-                                            </button>
+                                            <button @click="addOption(item)" class="w-full py-2 border border-dashed border-gray-300 rounded text-xs text-gray-500 hover:text-blue-600 font-bold">+ 新增選項</button>
                                         </div>
 
                                         <div class="mt-4 pt-3 border-t border-gray-200 flex justify-end">
-                                            <button @click="removeItem(section, iIdx)" class="text-red-400 hover:text-red-600 text-xs font-bold mr-4">刪除此菜色</button>
+                                            <button @click="removeItem(section, iIdx)" class="text-red-400 hover:text-red-600 text-xs font-bold mr-4">刪除</button>
                                             <button @click="item.isOpen = false" class="bg-blue-600 text-white px-4 py-1 rounded text-sm font-bold hover:bg-blue-700">完成</button>
                                         </div>
                                     </div>
                                 </div>
-                                
-                                <!-- Quick Add Button -->
-                                <button @click="addItem(section)" class="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold text-sm transition border-t border-transparent hover:border-gray-200">
-                                    <i class="fas fa-plus mr-2"></i> 新增菜色 (點擊直接展開)
-                                </button>
+                                <button @click="addItem(section)" class="w-full py-3 bg-gray-50 hover:bg-gray-100 text-gray-500 font-bold text-sm transition"><i class="fas fa-plus mr-2"></i> 新增菜色</button>
                             </div>
                         </div>
-
-                        <button @click="addSection" class="w-full py-4 border-2 border-dashed border-gray-300 text-gray-400 font-bold rounded-xl hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition">
-                            + 新增一個分類區塊
-                        </button>
+                        <button @click="addSection" class="w-full py-4 border-2 border-dashed border-gray-300 text-gray-400 font-bold rounded-xl hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition">+ 新增分類</button>
                     </div>
                 </div>
             </div>
@@ -264,113 +217,74 @@
     </div>
 
     <!-- Modals -->
-    <div v-if="showTabTemplateModal" class="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl overflow-hidden">
-            <div class="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <h3 class="text-lg font-bold text-gray-800">選擇分頁模板</h3>
-                <button @click="showTabTemplateModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div v-for="temp in tabTemplates" :key="temp.id" 
-                     @click="applyTabTemplate(temp)"
-                     class="border border-gray-200 rounded-xl p-4 cursor-pointer hover:border-blue-500 hover:bg-blue-50 transition group flex items-start gap-4">
-                    <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex-shrink-0 flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition text-xl">
-                        <i :class="temp.icon"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-gray-800">{{ temp.title }}</h4>
-                        <p class="text-xs text-gray-500 mt-1 leading-relaxed">{{ temp.desc }}</p>
-                    </div>
+    <div v-if="showTabTemplateModal" class="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6">
+            <h3 class="font-bold text-lg mb-4">選擇分頁模板</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div v-for="temp in tabTemplates" :key="temp.id" @click="applyTabTemplate(temp)" class="border border-gray-200 rounded-lg p-4 cursor-pointer hover:border-blue-500 hover:bg-blue-50 flex gap-4">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-500 flex justify-center items-center"><i :class="temp.icon"></i></div>
+                    <div><div class="font-bold">{{ temp.title }}</div><div class="text-xs text-gray-500">{{ temp.desc }}</div></div>
                 </div>
             </div>
+            <button @click="showTabTemplateModal = false" class="mt-4 w-full py-2 text-gray-400 hover:text-gray-600">Cancel</button>
         </div>
     </div>
 
-    <div v-if="showOptionModal" class="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <h3 class="font-bold text-gray-800"><i class="fas fa-magic text-blue-500 mr-2"></i>快速套用選項</h3>
-                <button @click="showOptionModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="p-4 space-y-3 max-h-[60vh] overflow-y-auto">
-                <div v-for="(optTemp, idx) in optionTemplates" :key="idx" 
-                     @click="applyOptionTemplate(optTemp)"
-                     class="p-4 border border-gray-200 rounded-xl hover:bg-blue-50 hover:border-blue-300 cursor-pointer transition group">
-                    <div class="font-bold text-gray-700 text-sm mb-2 group-hover:text-blue-700">{{ optTemp.title }}</div>
-                    <div class="flex flex-wrap gap-2">
-                        <span v-for="o in optTemp.options" class="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded group-hover:bg-white group-hover:text-blue-500 border border-transparent group-hover:border-blue-100">{{ o.name }}</span>
-                    </div>
+    <div v-if="showOptionModal" class="fixed inset-0 bg-gray-900/60 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6">
+            <h3 class="font-bold text-lg mb-4">快速套用</h3>
+            <div class="space-y-3">
+                <div v-for="(optTemp, idx) in optionTemplates" :key="idx" @click="applyOptionTemplate(optTemp)" class="border p-3 rounded cursor-pointer hover:bg-blue-50">
+                    <div class="font-bold text-sm">{{ optTemp.title }}</div>
+                    <div class="text-xs text-gray-400 flex gap-2"><span v-for="o in optTemp.options" class="bg-gray-100 px-1 rounded">{{ o.name }}</span></div>
                 </div>
             </div>
+            <button @click="showOptionModal = false" class="mt-4 w-full py-2 text-gray-400">Cancel</button>
         </div>
     </div>
 
-    <!-- Toast -->
-    <transition name="slide-fade">
-        <div v-if="toast.show" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-3 rounded-full shadow-lg text-sm font-bold flex items-center gap-3 z-50">
-            <i class="fas fa-check-circle text-green-400"></i> {{ toast.message }}
-        </div>
-    </transition>
-
+    <transition name="slide-fade"><div v-if="toast.show" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-6 py-2 rounded-full shadow-lg text-sm font-bold z-50">{{ toast.message }}</div></transition>
 </div>
 
 <script>
     const { createApp, reactive, ref, computed, watch } = Vue;
-
     createApp({
         setup() {
             const config = reactive({ token: localStorage.getItem('gh_token')||'', owner: localStorage.getItem('gh_owner')||'', repo: localStorage.getItem('gh_repo')||'', path: 'data.json' });
             const isConfigured = computed(() => !!localStorage.getItem('gh_token'));
             const data = ref([]);
-            const currentRestIndex = ref(0);
-            const currentMenuTabIdx = ref(0);
-            const activeTab = ref('basic');
-            const sha = ref('');
-            const loading = ref(false);
-            const saving = ref(false);
-            const hasUnsavedChanges = ref(false);
+            const currentRestIndex = ref(0), currentMenuTabIdx = ref(0), activeTab = ref('basic');
+            const sha = ref(''), loading = ref(false), saving = ref(false), hasUnsavedChanges = ref(false);
             const toast = reactive({ show: false, message: '' });
-            
-            const showTabTemplateModal = ref(false);
-            const showOptionModal = ref(false);
-            const currentEditingItem = ref(null);
+            const showTabTemplateModal = ref(false), showOptionModal = ref(false), currentEditingItem = ref(null);
 
             const tabTemplates = [
-                { id: 'course', title: '套餐模板 (Set Course)', desc: '前菜、主餐、甜點分類，適合正式套餐。', icon: 'fas fa-utensils', sections: [{name:'前菜/沙拉 (選一)', items:[]}, {name:'主菜 (選一)', items:[]}, {name:'甜點', items:[]}] },
-                { id: 'alacarte', title: '單點模板 (A La Carte)', desc: '冷盤、熱食、主食分類，適合居酒屋。', icon: 'fas fa-book-open', sections: [{name:'推薦冷盤', items:[]}, {name:'熱食炸物', items:[]}, {name:'主食 (飯/麵)', items:[]}] },
-                { id: 'simple', title: '簡單清單 (List)', desc: '單一通用分類。', icon: 'fas fa-list', sections: [{name:'全部品項', items:[]}] }
+                { id: 'course', title: '套餐', desc: '前菜/主餐/甜點', icon: 'fas fa-utensils', sections: [{name:'沙拉', items:[]}, {name:'主菜', items:[]}, {name:'甜點', items:[]}] },
+                { id: 'alacarte', title: '單點', desc: '冷盤/熱食/主食', icon: 'fas fa-book-open', sections: [{name:'冷盤', items:[]}, {name:'熱食', items:[]}, {name:'主食', items:[]}] },
+                { id: 'simple', title: '清單', desc: '單一分類', icon: 'fas fa-list', sections: [{name:'全部品項', items:[]}] }
             ];
+            // 模板資料：預設 variant 設定
             const optionTemplates = [
-                { title: '漢堡配料', options: [{name:'培根', price:'1700'}, {name:'起司', price:'300'}, {name:'烤洋蔥', price:'300'}] },
-                { title: '牛排熟度', options: [{name:'三分熟', price:'0'}, {name:'五分熟', price:'0'}, {name:'七分熟', price:'0'}] },
-                { title: '飲料甜度/冰塊', options: [{name:'去冰', price:'0'}, {name:'少冰', price:'0'}, {name:'無糖', price:'0'}] }
+                { title: '漢堡配料 (加購)', options: [{name:'培根', price:'1700', isVariant:false}, {name:'起司', price:'300', isVariant:false}] },
+                { title: '熟度 (無價)', options: [{name:'三分', price:'0', isVariant:true}, {name:'五分', price:'0', isVariant:true}] },
+                { title: '大小 (規格)', options: [{name:'小份', price:'600', isVariant:true}, {name:'大份', price:'900', isVariant:true}] }
             ];
 
             const currentRest = computed(() => data.value[currentRestIndex.value]);
             const currentMenuTab = computed(() => currentRest.value?.tabs[currentMenuTabIdx.value]);
-
             const showToast = (msg) => { toast.message = msg; toast.show = true; setTimeout(() => toast.show = false, 3000); };
 
             const loadFromGithub = async () => {
                 if(!config.token) return;
                 loading.value = true;
                 try {
-                    const url = `https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}`;
-                    const res = await fetch(url, { headers: { 'Authorization': `token ${config.token}` } });
-                    if(!res.ok) throw new Error('連線失敗');
+                    const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}`, { headers: { 'Authorization': `token ${config.token}` } });
+                    if(!res.ok) throw new Error();
                     const json = await res.json();
                     sha.value = json.sha;
-                    const content = new TextDecoder().decode(Uint8Array.from(atob(json.content), c => c.charCodeAt(0)));
-                    data.value = JSON.parse(content);
-                    // Add UI state
-                    data.value.forEach(r => {
-                        if(!r.tabs) r.tabs = [];
-                        r.tabs.forEach(t => t.sections.forEach(s => s.items.forEach(i => i.isOpen = false)));
-                    });
-                    localStorage.setItem('gh_token', config.token);
-                    localStorage.setItem('gh_owner', config.owner);
-                    localStorage.setItem('gh_repo', config.repo);
-                    showToast('讀取成功');
+                    data.value = JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(json.content), c => c.charCodeAt(0))));
+                    data.value.forEach(r => { if(!r.tabs) r.tabs=[]; r.tabs.forEach(t => t.sections.forEach(s => s.items.forEach(i => i.isOpen = false))); });
+                    localStorage.setItem('gh_token', config.token); localStorage.setItem('gh_owner', config.owner); localStorage.setItem('gh_repo', config.repo);
                 } catch(e) { console.error(e); } finally { loading.value = false; }
             };
 
@@ -378,55 +292,36 @@
                 saving.value = true;
                 try {
                     const cleanData = JSON.parse(JSON.stringify(data.value));
-                    // Remove UI state
                     cleanData.forEach(r => r.tabs.forEach(t => t.sections.forEach(s => s.items.forEach(i => delete i.isOpen))));
-                    const contentBase64 = btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(cleanData, null, 2))));
                     const res = await fetch(`https://api.github.com/repos/${config.owner}/${config.repo}/contents/${config.path}`, {
                         method: 'PUT',
                         headers: { 'Authorization': `token ${config.token}`, 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message: "Update", content: contentBase64, sha: sha.value })
+                        body: JSON.stringify({ message: "Update", content: btoa(String.fromCharCode(...new TextEncoder().encode(JSON.stringify(cleanData, null, 2)))), sha: sha.value })
                     });
                     if(!res.ok) throw new Error();
-                    const resJson = await res.json();
-                    sha.value = resJson.content.sha;
+                    sha.value = (await res.json()).content.sha;
                     hasUnsavedChanges.value = false;
-                    showToast('發布成功');
-                } catch(e) { showToast('儲存失敗'); } finally { saving.value = false; }
+                    showToast('Published!');
+                } catch(e) { showToast('Error'); } finally { saving.value = false; }
             };
 
-            const addRestaurant = () => {
-                data.value.push({ id:'r'+Date.now(), name:'新餐廳', tabs:[] });
-                selectRestaurant(data.value.length-1);
-            };
+            const addRestaurant = () => { data.value.push({ id:'r'+Date.now(), name:'New', tabs:[] }); selectRestaurant(data.value.length-1); };
             const selectRestaurant = (idx) => { currentRestIndex.value = idx; currentMenuTabIdx.value = 0; activeTab.value = 'basic'; };
-            const deleteRestaurant = () => { if(confirm('刪除?')) data.value.splice(currentRestIndex.value, 1); };
+            const deleteRestaurant = () => { if(confirm('Delete?')) data.value.splice(currentRestIndex.value, 1); };
             const logout = () => { localStorage.removeItem('gh_token'); location.reload(); };
-
-            const applyTabTemplate = (temp) => {
-                currentRest.value.tabs.push({ id:'t'+Date.now(), name: temp.title.split(' ')[0], sections: JSON.parse(JSON.stringify(temp.sections)) });
-                currentMenuTabIdx.value = currentRest.value.tabs.length - 1;
-                showTabTemplateModal.value = false;
-                activeTab.value = 'menu';
-            };
-            const removeTab = (i) => confirm('刪除分頁?') && currentRest.value.tabs.splice(i, 1);
-            const addSection = () => currentMenuTab.value.sections.push({ name:'新分類', items:[] });
-            const removeSection = (i) => confirm('刪除分類?') && currentMenuTab.value.sections.splice(i, 1);
-            const moveSection = (i, d) => { const arr = currentMenuTab.value.sections; const n=i+d; if(n>=0 && n<arr.length) [arr[i], arr[n]]=[arr[n], arr[i]]; };
-            
-            const addItem = (sec) => {
-                // Auto open the new item
-                sec.items.push({ name:'', price:0, options:[], isOpen: true });
-            };
+            const applyTabTemplate = (temp) => { currentRest.value.tabs.push({ id:'t'+Date.now(), name: temp.title, sections: JSON.parse(JSON.stringify(temp.sections)) }); showTabTemplateModal.value = false; activeTab.value = 'menu'; currentMenuTabIdx.value = currentRest.value.tabs.length-1; };
+            const removeTab = (i) => confirm('Delete Tab?') && currentRest.value.tabs.splice(i, 1);
+            const addSection = () => currentMenuTab.value.sections.push({ name:'New Section', items:[] });
+            const removeSection = (i) => confirm('Delete Section?') && currentMenuTab.value.sections.splice(i, 1);
+            const moveSection = (i, d) => { const arr=currentMenuTab.value.sections, n=i+d; if(n>=0 && n<arr.length) [arr[i], arr[n]]=[arr[n], arr[i]]; };
+            const addItem = (sec) => sec.items.push({ name:'', price:0, options:[], isOpen: true });
             const removeItem = (sec, i) => sec.items.splice(i, 1);
-            const moveItem = (sec, i, d) => { const arr=sec.items; const n=i+d; if(n>=0 && n<arr.length) [arr[i], arr[n]]=[arr[n], arr[i]]; };
+            const moveItem = (sec, i, d) => { const arr=sec.items, n=i+d; if(n>=0 && n<arr.length) [arr[i], arr[n]]=[arr[n], arr[i]]; };
             
-            const addOption = (item) => { if(!item.options) item.options=[]; item.options.push({name:'', price:''}); };
+            // 新增選項時，預設 isVariant: false (加購)
+            const addOption = (item) => { if(!item.options) item.options=[]; item.options.push({name:'', price:'', isVariant: false}); };
             const openOptionTemplateModal = (item) => { currentEditingItem.value = item; showOptionModal.value = true; };
-            const applyOptionTemplate = (temp) => {
-                if(!currentEditingItem.value.options) currentEditingItem.value.options = [];
-                temp.options.forEach(o => currentEditingItem.value.options.push({...o}));
-                showOptionModal.value = false;
-            };
+            const applyOptionTemplate = (temp) => { if(!currentEditingItem.value.options) currentEditingItem.value.options=[]; temp.options.forEach(o => currentEditingItem.value.options.push({...o})); showOptionModal.value = false; };
 
             watch(data, () => { if(sha.value) hasUnsavedChanges.value = true; }, { deep: true });
             if(isConfigured.value) setTimeout(loadFromGithub, 500);
@@ -436,8 +331,7 @@
                 currentRest, currentRestIndex, currentMenuTab, currentMenuTabIdx, activeTab,
                 showTabTemplateModal, showOptionModal, tabTemplates, optionTemplates,
                 loadFromGithub, saveToGithub, addRestaurant, selectRestaurant, deleteRestaurant, logout,
-                applyTabTemplate, removeTab, addSection, removeSection, moveSection,
-                addItem, removeItem, moveItem, addOption, openOptionTemplateModal, applyOptionTemplate
+                applyTabTemplate, removeTab, addSection, removeSection, moveSection, addItem, removeItem, moveItem, addOption, openOptionTemplateModal, applyOptionTemplate
             };
         }
     }).mount('#app');
