@@ -189,9 +189,84 @@
             "name": "主菜 (Main Dish) - 請選擇一道",
             "items": [
               {
-                "name": "",
+                "name": "Luger 漢堡",
                 "price": 0,
-                "options": []
+                "options": [],
+                "isPlus": false,
+                "subName": "ルーガー バーガー",
+                "desc": "附炸薯條與洋蔥切片"
+              },
+              {
+                "name": "烤大西洋鮭魚",
+                "price": 0,
+                "options": [],
+                "subName": "グリルドサーモン",
+                "desc": "附花椰菜"
+              },
+              {
+                "name": "酪梨培根生菜番茄(B.L.T.) 三明治",
+                "price": 0,
+                "options": [],
+                "subName": "アボカド シズリングベーコン レタス トマトサンドイッチ",
+                "desc": "附炸薯條"
+              },
+              {
+                "name": "熟成肉 USDA Prime 牛排三明治",
+                "price": 2500,
+                "options": [],
+                "subName": "熟成肉 USDAプライムビーフステーキサンドウィッチ",
+                "desc": "附 Luger 醬汁、炸薯條",
+                "isPlus": true
+              },
+              {
+                "name": "熟成肉 USDA Prime 1 英吋牛排（數量限定）",
+                "price": 6000,
+                "options": [],
+                "subName": "熟成肉 USDAプライムビーフ 1インチステーキ",
+                "isPlus": true
+              }
+            ]
+          },
+          {
+            "name": "咖啡或紅茶 (Coffee or Tea) - 請選擇一道",
+            "items": [
+              {
+                "name": "咖啡",
+                "price": 0,
+                "options": [],
+                "subName": "コーヒー"
+              },
+              {
+                "name": "紅茶",
+                "price": 0,
+                "options": [],
+                "subName": "紅茶"
+              }
+            ]
+          },
+          {
+            "name": "甜點加購 (Dessert)",
+            "items": [
+              {
+                "name": "半份核桃派",
+                "price": 900,
+                "options": [],
+                "subName": "ハーフサイズピーカンパイ",
+                "isPlus": true
+              },
+              {
+                "name": "半份起司蛋糕",
+                "price": 900,
+                "options": [],
+                "subName": "ハーフサイズチーズケーキ",
+                "isPlus": true
+              },
+              {
+                "name": "冰淇淋",
+                "price": 899,
+                "options": [],
+                "subName": "アイスクリーム",
+                "isPlus": true
               }
             ]
           }
